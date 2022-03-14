@@ -45,8 +45,8 @@ const String page PROGMEM = "<head>"
 WebServer server(80);
 
 //Enter your SSID and PASSWORD
-const char* ssid = "Troy and Abed in the Modem";
-const char* password = "m0rn1ngN1ght5";
+const char* ssid = "DESKTOP-HNE7AFG 2283";
+const char* password = "f1ftyp0ints";
 
 int scanTime = 5; //In seconds
 BLEScan* pBLEScan;
@@ -67,6 +67,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
       }
     }
 
+    //Takes Hexadecimal Manufacturer Data and collects Decimal values from it.
     double value_from_hex_data(const char* service_data, int offset, int data_length, bool reverse, bool canBeNegative = true) {
       char data[data_length + 1];
       memcpy(data, &service_data[offset], data_length);
@@ -110,7 +111,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
       Serial.print("Voltage:");
       Serial.println(value_from_hex_data(manufacturerdata , 16, 4, true) / 1000);
       if (temp < 100) {
-        server.handleClient();
+        server.handleClient(); //Send data to web page.
       }
     }
 };
