@@ -25,6 +25,7 @@ class Sensor {
 #include "NimBLEEddystoneURL.h"
 #include "NimBLEEddystoneTLM.h"
 #include "NimBLEBeacon.h"
+
 #include "ArduinoJson.h"
 
 class Thermobeacon : public Sensor
@@ -103,7 +104,7 @@ class Thermobeacon : public Sensor
 
     String getData()
     {
-      Serial.println("Getting Thermobeacon Data");
+      Serial.println("\nGetting Thermobeacon Data");
       BLEScan *pBLEScan;
 
       BLEDevice::init("");
@@ -154,7 +155,7 @@ class DummySensor : public Sensor
 
     String getData()
     {
-      Serial.println("Getting Dummy Data");
+      Serial.println("\nGetting Dummy Data");
       String dataJSON = "";
       StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
       doc["temp"] = 25.2;
