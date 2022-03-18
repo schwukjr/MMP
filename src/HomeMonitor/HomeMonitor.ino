@@ -1,21 +1,23 @@
-#include "Sensor.cpp"
-
+#include "Room.cpp"
 
 void setup()
 {
   // put your setup code here, to run once:
   Serial.begin(115200);
-  Sensor* sensors[50];
-  int numberOfSensors = 0;
 
-  sensors[numberOfSensors] = new Thermobeacon("Sensor1", "b5:70:00:00:06:c4");
-  numberOfSensors++;
-  sensors[numberOfSensors] = new DummySensor("sensor2");
-  numberOfSensors++;
+  Room* room1 = new Room();
 
-  for (int i = 0; i < numberOfSensors; i++) {
-    Serial.println(sensors[i]->name + ": " + sensors[i]->getData());
-  }
+  room1->addSensor(new Thermobeacon("Sensor1", "b5:70:00:00:06:c4"));
+  room1->addSensor(new Thermobeacon("Sensor2", "b5:70:00:00:07:db"));
+
+  Serial.println(room1->getTemperature(0));
+  Serial.println(room1->getTemperature("Sensor2"));
+  Serial.println(room1->getTemperature());
+
+  Serial.println(room1->getHumidity(0));
+  Serial.println(room1->getHumidity("Sensor2"));
+  Serial.println(room1->getHumidity());
+
 }
 
 void loop()

@@ -14,7 +14,9 @@ class Sensor {
     //Concrete Methods
 
     //Abstract Methods
-    virtual String getData(){return "";};
+    virtual String getData() {
+      return "";
+    };
 
 
 
@@ -115,43 +117,42 @@ class Thermobeacon : public Sensor
 
       while (true) {
         BLEScanResults foundDevices = pBLEScan->start(5, false);
+        if (foundDevices.getCount() > 0) {
+          for (int i = 0; i < foundDevices.getCount(); i++) {
+            String addr(foundDevices.getDevice(i).getAddress().toString().c_str());
 
-        for (int i = 0; i < foundDevices.getCount(); i++) {
-          String addr(foundDevices.getDevice(i).getAddress().toString().c_str());
+            if (addr == address) {
+              std::string strManufacturerData = foundDevices.getDevice(i).getManufacturerData();
+              char cManufacturerData[100];
+              strManufacturerData.copy((char *)cManufacturerData, strManufacturerData.length(), 0);
 
-          if (addr == address) {
-            std::string strManufacturerData = foundDevices.getDevice(i).getManufacturerData();
-            char cManufacturerData[100];
-            strManufacturerData.copy((char *)cManufacturerData, strManufacturerData.length(), 0);
-
-            if (strManufacturerData.length() == 20 && cManufacturerData[0] == 0x10 && cManufacturerData[1] == 0x00)
-            {
-              char* manufacturerdata = BLEUtils::buildHexData(NULL, (uint8_t*)foundDevices.getDevice(i).getManufacturerData().data(), foundDevices.getDevice(i).getManufacturerData().length());
-              String result = process_ws02(manufacturerdata, addr);
-              free(manufacturerdata);
-              pBLEScan->clearResults(); // delete results fromBLEScan buffer to release memory
-              free(pBLEScan);
-              return result;
+              if (strManufacturerData.length() == 20 && cManufacturerData[0] == 0x10 && cManufacturerData[1] == 0x00)
+              {
+                char* manufacturerdata = BLEUtils::buildHexData(NULL, (uint8_t*)foundDevices.getDevice(i).getManufacturerData().data(), foundDevices.getDevice(i).getManufacturerData().length());
+                String result = process_ws02(manufacturerdata, addr);
+                free(manufacturerdata);
+                pBLEScan->clearResults(); // delete results fromBLEScan buffer to release memory
+                //free(pBLEScan);
+                Serial.println("Successful!");
+                return result;
+              }
             }
           }
         }
-
-
-
       }
 
 
     }
 };
 
-class DummySensor : public Sensor
+class DummyHybridSensor : public Sensor
 {
   private:
 
   public:
-    DummySensor() {};
-    DummySensor(String n): Sensor(n) {};
-    ~DummySensor() {};
+    DummyHybridSensor() {};
+    DummyHybridSensor(String n): Sensor(n) {};
+    ~DummyHybridSensor() {};
 
     String getData()
     {
@@ -159,6 +160,48 @@ class DummySensor : public Sensor
       String dataJSON = "";
       StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
       doc["temp"] = 25.2;
+      doc["hum"] = 50.9;
+      serializeJson(doc, dataJSON);
+      return dataJSON;
+    }
+};
+
+class DummyTemperatureSensor : public Sensor
+{
+  private:
+
+  public:
+    DummyTemperatureSensor() {};
+    DummyTemperatureSensor(String n): Sensor(n) {};
+    ~DummyTemperatureSensor() {};
+
+    String getData()
+    {
+      Serial.println("\nGetting Dummy Data");
+      String dataJSON = "";
+      StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
+      doc["temp"] = 25.2;
+      doc["hum"] = '!';
+      serializeJson(doc, dataJSON);
+      return dataJSON;
+    }
+};
+
+class DummyHumiditySensor : public Sensor
+{
+  private:
+
+  public:
+    DummyHumiditySensor() {};
+    DummyHumiditySensor(String n): Sensor(n) {};
+    ~DummyHumiditySensor() {};
+
+    String getData()
+    {
+      Serial.println("\nGetting Dummy Data");
+      String dataJSON = "";
+      StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
+      doc["temp"] = '!';
       doc["hum"] = 50.9;
       serializeJson(doc, dataJSON);
       return dataJSON;
