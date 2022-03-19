@@ -43,7 +43,6 @@ class Room {
         } else {
           if (doc["temp"] != -100.00) {
             tempSum += doc["temp"].as<double>();
-
             validTempCount++;
           }
         }
@@ -62,13 +61,11 @@ class Room {
             Serial.print("deserializeJson() failed with code ");
             Serial.println(e.c_str());
           } else {
-            if (doc["temp"] != -100.00) {
-              return doc["temp"].as<double>();
-            }
+            return doc["temp"].as<double>();
           }
         }
       }
-      return -100.00;
+      return -100.00
     }
 
     double getTemperature(int index) {
@@ -80,13 +77,12 @@ class Room {
           Serial.print("deserializeJson() failed with code ");
           Serial.println(e.c_str());
         } else {
-          if (doc["temp"] != -100.00) {
-            return doc["temp"].as<double>();
-          }
+          return doc["temp"].as<double>();
         }
       }
-      return -100.00;
+      return -100.00
     }
+
 
     double getHumidity() {
       double humSum = 0;
@@ -118,9 +114,7 @@ class Room {
             Serial.print("deserializeJson() failed with code ");
             Serial.println(e.c_str());
           } else {
-            if (doc["hum"] != -100.00) {
-              return doc["hum"].as<double>();
-            }
+            return doc["hum"].as<double>();
           }
         }
       }
@@ -136,9 +130,7 @@ class Room {
           Serial.print("deserializeJson() failed with code ");
           Serial.println(e.c_str());
         } else {
-          if (doc["hum"] != -100.00) {
-            return doc["hum"].as<double>();
-          }
+          return doc["hum"].as<double>();
         }
       }
       return -100.00;
@@ -167,7 +159,7 @@ class Room {
     }
 
     String getData(int index) {
-      if (index <= numberOfSensors){
+      if (index <= numberOfSensors) {
         return sensors[index]->getData();
       }
     }
