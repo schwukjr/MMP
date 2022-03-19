@@ -65,7 +65,7 @@ class Room {
           }
         }
       }
-      return -100.00
+      return -100.00; 
     }
 
     double getTemperature(int index) {
@@ -80,7 +80,7 @@ class Room {
           return doc["temp"].as<double>();
         }
       }
-      return -100.00
+      return -100.00;
     }
 
 
