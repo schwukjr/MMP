@@ -7,10 +7,13 @@ void setup()
 
   House* house1 = new House("House1");
 
-  house1->addRoom(new Room("Room1"));
-  house1->getRoom("Room1")->addSensor(new Thermobeacon("Sensor1", "b5:70:00:00:06:c4"));
-  house1->getRoom("Room1")->addSensor(new Thermobeacon("Sensor2", "b5:70:00:00:07:db"));
-  Serial.println("Average: " + String(house1->getAverageTemperature("Room1"), 2));
+  house1->addRoom(new Room("Bedroom"));
+  house1->getRoom("Bedroom")->addSensor(new Thermobeacon("Sensor1", "b5:70:00:00:06:c4"));
+  house1->getRoom("Bedroom")->addSensor(new Thermobeacon("Sensor2", "b5:70:00:00:07:db"));
+  house1->addRoom(new Room("Bathroom"));
+  house1->getRoom("Bathroom")->addSensor(new OneWireTempSensor("Sensor3", 5));
+  Serial.println("Average: " + String(house1->getAverageTemperature("Bedroom"), 2));
+  Serial.println("Average: " + String(house1->getAverageTemperature("Bathroom"), 2));
 
   //  Room* room1 = new Room();
   //

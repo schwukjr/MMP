@@ -145,6 +145,40 @@ class Thermobeacon : public Sensor
     }
 };
 
+#include <OneWire.h>
+#include <DallasTemperature.h>
+
+class OneWireTempSensor : public Sensor
+{
+  private:
+
+  public:
+    int pinNo;
+
+    OneWireTempSensor() {};
+    OneWireTempSensor(String n, int i): Sensor(n) {
+      pinNo = i;
+    };
+    ~OneWireTempSensor() {};
+
+    String getData()
+    {
+      Serial.println("\nGetting OneWire Temp Data");
+
+      OneWire oneWire(pinNo);
+      DallasTemperature sensors(&oneWire);
+
+      String dataJSON = "";
+      StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
+      sensors.requestTemperatures();
+      double celcius = sensors.getTempCByIndex(0);
+      doc["temp"] = celcius;
+      doc["hum"] = -100.00;
+      serializeJson(doc, dataJSON);
+      return dataJSON;
+    }
+};
+
 class DummyHybridSensor : public Sensor
 {
   private:
