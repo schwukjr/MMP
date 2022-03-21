@@ -58,8 +58,8 @@ const String page PROGMEM = "<head>"
 
 WebServer server(80);
 
-const char* ssid = "SSID";
-const char* password = "PASS";
+const char* ssid = "trishypoo";
+const char* password = "gingerhair";
 
 int scanTime = 5; //In seconds
 BLEScan *pBLEScan;

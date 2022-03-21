@@ -41,7 +41,7 @@ class Room {
           Serial.print("deserializeJson() failed with code ");
           Serial.println(e.c_str());
         } else {
-          if (doc["temp"] != -100.00) {
+          if (doc["temp"].as<double>() != -100.00) {
             tempSum += doc["temp"].as<double>();
             validTempCount++;
           }
@@ -65,7 +65,7 @@ class Room {
           }
         }
       }
-      return -100.00; 
+      return -100.00;
     }
 
     double getTemperature(int index) {
@@ -95,7 +95,7 @@ class Room {
           Serial.print("deserializeJson() failed with code ");
           Serial.println(e.c_str());
         } else {
-          if (doc["hum"] != -100.00) {
+          if (doc["hum"].as<double>() != -100.00) {
             humSum += doc["hum"].as<double>();
             validHumCount++;
           }
@@ -137,17 +137,37 @@ class Room {
     }
 
     String getData() {
-      String dataJSON = "";
+      double tempSum = 0;
+      int validTempCount = 0;
+      double humSum = 0;
+      int validHumCount = 0;
 
-      double currentTemp = getTemperature();
-      double currentHum = getHumidity();
-
+      for (int i = 0; i < numberOfSensors; i++) {
+        String dataJSON = sensors[i]->getData();
+        StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
+        DeserializationError e = deserializeJson(doc, dataJSON);
+        if (e) {
+          Serial.print("deserializeJson() failed with code ");
+          Serial.println(e.c_str());
+        } else {
+          if (doc["temp"].as<double>() != -100.00) {
+            tempSum += doc["temp"].as<double>();
+            validTempCount++;
+          }
+          if (doc["hum"].as<double>() != -100.00) {
+            humSum += doc["hum"].as<double>();
+            validHumCount++;
+          }
+        }
+      }
+      
       StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
-      doc["temp"] = currentTemp;
-      doc["hum"] = currentHum;
-      serializeJson(doc, dataJSON);
+      doc["temp"] = tempSum / validTempCount;
+      doc["hum"] = humSum / validHumCount;
 
-      return dataJSON;
+      String returnJSON = "";
+      serializeJson(doc, returnJSON);
+      return returnJSON;
     }
 
     String getData(String n) {
