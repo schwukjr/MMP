@@ -1,7 +1,13 @@
 #include "Arduino.h"
 #include "Room.cpp"
 
+#define BYTES_PER_HOUSE  64
+#define BYTES_PER_ROOM  96
+#define BYTES_PER_SENSOR  96
+#define BYTES_BUFFER  100
+
 #define MAX_ROOMS 50
+#define MAX_SENSORS_PER_ROOM 50
 
 class House {
   public:
@@ -92,6 +98,42 @@ class House {
       if (index <= numberOfRooms) {
         return rooms[index]->getData();
       }
+    }
+
+    String toJSON() {
+      int numberOfSensors = 0;
+      for (int i  = 0; i < numberOfRooms; i++) {
+        numberOfSensors += rooms[i]->numberOfSensors;
+      }
+
+      DynamicJsonDocument doc(2048);
+
+      doc["HouseName"] = name;
+      doc["NumberOfRooms"] = numberOfRooms;
+
+      JsonArray Rooms = doc.createNestedArray("Rooms");
+
+      for (int i = 0; i < numberOfRooms; i++) {
+        Room* currentRoom = rooms[i];
+        JsonObject jsonRoom = Rooms.createNestedObject();
+        jsonRoom["RoomName"] = currentRoom->name;
+        jsonRoom["NumberOfSensors"] = currentRoom->numberOfSensors;
+        jsonRoom["AverageTemperature"] = currentRoom->getTemperature();
+        jsonRoom["AverageHumidity"] = currentRoom->getHumidity();
+
+        JsonArray jsonSensorsInRoom = jsonRoom.createNestedArray("Sensors");
+
+        for (int j = 0; j < currentRoom->numberOfSensors; j++) {
+          JsonObject jsonSensor = jsonSensorsInRoom.createNestedObject();
+          jsonSensor["SensorName"] = currentRoom->sensors[j]->name;
+          jsonSensor["Temperature"] = currentRoom->getTemperature(j);
+          jsonSensor["Humidity"] = currentRoom->getHumidity(j);
+        }
+      }
+
+      String dataJSON = "";
+      serializeJsonPretty(doc, dataJSON);
+      return dataJSON;
     }
 
 

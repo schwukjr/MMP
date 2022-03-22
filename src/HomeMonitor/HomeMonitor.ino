@@ -8,8 +8,9 @@ const String page PROGMEM = "<head>"
                             " <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js\"></script>"
                             " </head>"
                             " <body>"
-                            " <h1>Thermobeacon Sensor Data: </h1><h2>Temperature:</h2> <h2 id=\"temp1\">""</h2>\r\n"
-                            " <h2>Humidity:</h2><h2 id=\"hum1\">""</h2>\r\n"
+                            " <h1>HomeMonitor: </h1><h2 id=\"text\">""</h2>\r\n"
+                            //                            " <h1>HomeMonitor: </h1><h2>Temperature:</h2> <h2 id=\"temp1\">""</h2>\r\n"
+                            //                            " <h2>Humidity:</h2><h2 id=\"hum1\">""</h2>\r\n"
                             " <script>\r\n"
                             " $(document).ready(function(){\r\n"
                             " setInterval(getData,1000);\r\n"
@@ -18,9 +19,10 @@ const String page PROGMEM = "<head>"
                             "  type:\"GET\",\r\n"
                             "  url:\"data\",\r\n"
                             "  success: function(data){\r\n"
-                            "  let s = JSON.parse(data);\r\n"
-                            "  $('#temp1').html(s.temp);\r\n"
-                            "  $('#hum1').html(s.hum);\r\n"
+                            //                            "  let s = JSON.parse(data);\r\n"
+                            //                            "  $('#temp1').html(s.temp);\r\n"
+                            //                            "  $('#hum1').html(s.hum);\r\n"
+                            "  $('#text').html(data);\r\n"
                             "}\r\n"
                             "}).done(function() {\r\n"
                             "  console.log('ok');\r\n"
@@ -29,7 +31,6 @@ const String page PROGMEM = "<head>"
                             "});"
                             "</script>\r\n"
                             "</body>";
-
 
 WebServer server(80);
 
@@ -82,8 +83,11 @@ void setup()
   house1->addRoom(new Room("Bedroom"));
   house1->getRoom("Bedroom")->addSensor(new Thermobeacon("Sensor1", "b5:70:00:00:06:c4"));
   house1->getRoom("Bedroom")->addSensor(new Thermobeacon("Sensor2", "b5:70:00:00:07:db"));
-  house1->getRoom("Bedroom")->addSensor(new OneWireTempSensor("Sensor3", 23));
+  house1->addRoom(new Room("Bathroom"));
+  house1->getRoom("Bathroom")->addSensor(new OneWireTempSensor("Sensor3", 23));
 
+  text = house1->toJSON();
+  Serial.println(text);
 
 }
 
@@ -91,9 +95,9 @@ void loop()
 {
   // put your main code here, to run repeatedly:
 
-  text = house1->getRoom("Bedroom")->getData();
-  Serial.println(text);
-  server.handleClient();
-  delay(2000);
+  //  text = house1->getRoom("Bedroom")->getData();
+  //  Serial.println(text);
+  //server.handleClient();
+  //delay(2000);
 
 }
