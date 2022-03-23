@@ -108,26 +108,26 @@ class House {
 
       DynamicJsonDocument doc(2048);
 
-      doc["HouseName"] = name;
-      doc["NumberOfRooms"] = numberOfRooms;
+      doc["housename"] = name;
+      doc["numberofrooms"] = numberOfRooms;
 
-      JsonArray Rooms = doc.createNestedArray("Rooms");
+      JsonArray Rooms = doc.createNestedArray("rooms");
 
       for (int i = 0; i < numberOfRooms; i++) {
         Room* currentRoom = rooms[i];
         JsonObject jsonRoom = Rooms.createNestedObject();
-        jsonRoom["RoomName"] = currentRoom->name;
-        jsonRoom["NumberOfSensors"] = currentRoom->numberOfSensors;
-        jsonRoom["AverageTemperature"] = currentRoom->getTemperature();
-        jsonRoom["AverageHumidity"] = currentRoom->getHumidity();
+        jsonRoom["roomname"] = currentRoom->name;
+        jsonRoom["numberofsensors"] = currentRoom->numberOfSensors;
+        jsonRoom["averagetemperature"] = currentRoom->getTemperature();
+        jsonRoom["averagehumidity"] = currentRoom->getHumidity();
 
-        JsonArray jsonSensorsInRoom = jsonRoom.createNestedArray("Sensors");
+        JsonArray jsonSensorsInRoom = jsonRoom.createNestedArray("sensors");
 
         for (int j = 0; j < currentRoom->numberOfSensors; j++) {
           JsonObject jsonSensor = jsonSensorsInRoom.createNestedObject();
-          jsonSensor["SensorName"] = currentRoom->sensors[j]->name;
-          jsonSensor["Temperature"] = currentRoom->getTemperature(j);
-          jsonSensor["Humidity"] = currentRoom->getHumidity(j);
+          jsonSensor["sensorname"] = currentRoom->sensors[j]->name;
+          jsonSensor["temperature"] = currentRoom->getTemperature(j);
+          jsonSensor["humidity"] = currentRoom->getHumidity(j);
         }
       }
 

@@ -4,45 +4,63 @@
 #include <WiFiClient.h>
 #include <WebServer.h>
 
-const char page[] PROGMEM = R"(
-<head>
- <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js\"></script>
-</head>
-<body>
- <h1>HomeMonitor: </h1>
- <h2 id=\"text\">""</h2>
- <script>
-   $(document).ready(function(){
-     setInterval(getData,1000);
-     function getData(){
-       $.ajax({
-         type:\"GET\",
-         url:\"data\",
-         success: function(data){
-           let s = JSON.parse(data);
-           let parsedData = "";
-           $('#text').html(data);
-         }
-       }).done(function() {
-         console.log('ok');
-       })
-     }
-   });
- </script>
-</body>
-)";
+
+const String page PROGMEM = "<head>"
+                            " <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js\"></script>"
+                            " </head>"
+                            " <body>"
+                            " <h1>HomeMonitor: </h1><div id=\"text\">"
+                            "</div>\r\n"
+                            " <script>\r\n"
+                            " $(document).ready(function(){\r\n"
+                            " setInterval(getData,1000);\r\n"
+                            " function getData(){\r\n"
+                            " $.ajax({\r\n"
+                            "  type:\"GET\",\r\n"
+                            "  url:\"data\",\r\n"
+                            "  success: function(data){\r\n" //  "  \r\n"
+
+                            "  let s = JSON.parse(data);\r\n"
+                            "  let parsedData = \"\";\r\n"
+
+                            "  parsedData += \"<p>House Name: \" + s.housename + \"</p>\";\r\n"
+                            "  parsedData += \"<p>Number of Rooms: \" + s.numberofrooms + \"</p>\";\r\n"
+                            "  parsedData += \"<p>Rooms:</p>\";\r\n"
+
+                            "  for (let i = 0; i < s.numberofrooms; i++) {\r\n"
+                            "   parsedData += \"<p> --- Room Name: \" + s.rooms[i].roomname + \"</p>\";\r\n"
+                            "   parsedData += \"<p> --- Average Temperature: \" + s.rooms[i].averagetemperature + \"</p>\";\r\n"
+                            "   parsedData += \"<p> --- Average Humidity: \" + s.rooms[i].averagehumidity + \"</p>\";\r\n"
+                            "   parsedData += \"<p> --- Number of Sensors: \" + s.rooms[i].numberofsensors + \"</p>\";\r\n"
+                            "   parsedData += \"<p> --- Sensors:</p>\";\r\n"
+
+                            "   for (let j = 0; j < s.rooms[i].numberofsensors; j++){\r\n"
+                            "     parsedData += \"<p> ------ Sensor Name: \" + s.rooms[i].sensors[j].sensorname + \"</p>\";\r\n"
+                            "     parsedData += \"<p> ------ Measured Temperature: \" + s.rooms[i].sensors[j].temperature + \"</p>\";\r\n"
+                            "     parsedData += \"<p> ------ Measured Humidity: \" + s.rooms[i].sensors[j].humidity + \"</p>\";\r\n"
+                            "   parsedData += \"<br>\";\r\n"
+                            "   }\r\n"
+                            "  }\r\n"
+
+                            "  $('#text').html(parsedData);\r\n"
+                            "}\r\n"
+                            "}).done(function() {\r\n"
+                            "  console.log('ok');\r\n"
+                            "})\r\n"
+                            "}\r\n"
+                            "});"
+                            "</script>\r\n"
+                            "</body>";
 
 WebServer server(80);
 
 const char* ssid = "trishypoo";
 const char* password = "gingerhair";
-String text = "Collecting Data."; //Data to send to web page.
+String text = "Collecting Data.";  //Data to send to web page.
 
 House* house1 = new House("House 1");
 
-void setup()
-{
-  // put your setup code here, to run once:
+void setup(){
   Serial.begin(115200);
 
   initialiseWebServer();
@@ -67,11 +85,10 @@ void loop()
   //  text = house1->getRoom("Bedroom")->getData();
   //  Serial.println(text);
   //delay(2000);
-
 }
 
 void initialiseWebServer() {
-  WiFi.mode(WIFI_STA); //Connect to your wifi
+  WiFi.mode(WIFI_STA);  //Connect to your wifi
   WiFi.begin(ssid, password);
 
   Serial.println("Connecting to ");
@@ -100,6 +117,6 @@ void initialiseWebServer() {
     //text = "";
   });
 
-  server.begin();                  //Start server
+  server.begin();  //Start server
   Serial.println("HTTP server started");
 }
