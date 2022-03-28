@@ -6,8 +6,38 @@
 
 #include "ArduinoJson.h"
 
-void setup() {
+#include <WiFi.h>
+#include "time.h"
 
+const char* ssid     = "BTWholeHome-QZG";
+const char* password = "DLvJdC6QhrQp";
+
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 0;
+const int   daylightOffset_sec = 3600;
+
+TaskHandle_t Task1, Task2;
+
+void setup() {
+  Serial.begin(115200);
+  
+  // Connect to Wi-Fi
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.mode(WIFI_STA);  //Connect to your wifi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected.");
+
+  // Init and get the time
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  
+  xTaskCreate(startBluetoothScan, "BluetoothTask", 20000, NULL, 0, &Task1);
 }
 
 double value_from_hex_data(const char* service_data, int offset, int data_length, bool reverse, bool canBeNegative = true) {
@@ -43,28 +73,45 @@ void revert_hex_data(const char* in, char* out, int l) {
   out[l - 1] = '\0';
 }
 
-void process_ws02( char* manufacturerdata, String address) {
+String process_ws02( char* manufacturerdata, String address) {
   double temp = value_from_hex_data(manufacturerdata , 24, 4, true) / 16;
   double hum = value_from_hex_data(manufacturerdata , 28, 4, true) / 16;
   double voltage = value_from_hex_data(manufacturerdata , 20, 4, true) / 1000;
 
-  StaticJsonDocument<9> doc;
+  char currentTimeStamp[20] = "";
+
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    String("01/01/1900-00:00:00").toCharArray(currentTimeStamp, 20);
+  }
+  strftime(currentTimeStamp,20, "%m/%d/%y-%H:%M:%S", &timeinfo);
+
+  StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
 
   doc["address"] = address;
   doc["temp"] = temp;
   doc["hum"] = hum;
   doc["volts"] = voltage;
+  doc["time"] = currentTimeStamp;
 
   //Limit responses to realistic data. (Thermobeacons have max operating temp. of 65 Degrees C)
-  Serial.print("Temperature:");
-  Serial.println(temp);
-  Serial.print("Humidity:");
-  Serial.println(hum);
-  Serial.print("Voltage:");
-  Serial.println(value_from_hex_data(manufacturerdata , 20, 4, true) / 1000);
+  //  Serial.print("Temperature:");
+  //  Serial.println(temp);
+  //  Serial.print("Humidity:");
+  //  Serial.println(hum);
+  //  Serial.print("Voltage:");
+  //  Serial.println(value_from_hex_data(manufacturerdata , 20, 4, true) / 1000);
+
+  String returnValue = "";
+  serializeJson(doc, returnValue);
+  return returnValue;
 }
 
-void startBluetoothScan() {
+void startBluetoothScan(void * pvParameters) {
+  Serial.print("Task1 running on core ");
+  Serial.println(xPortGetCoreID());
+
   Serial.println("\nGetting Thermobeacon Data");
   BLEScan *pBLEScan;
 
@@ -74,10 +121,11 @@ void startBluetoothScan() {
   pBLEScan->setInterval(100);
   pBLEScan->setWindow(99); // less or equal setInterval value
 
-  DynamicJsonDocument(2048) doc;
-  JsonArray Sensors = doc.createNestedArray("sensors");
-
   while (true) {
+    DynamicJsonDocument doc(2048);
+    JsonArray Sensors = doc.createNestedArray("sensors");
+
+    Serial.println("\nStarting scan!");
     BLEScanResults foundDevices = pBLEScan->start(5, false);
     if (foundDevices.getCount() > 0) {
       for (int i = 0; i < foundDevices.getCount(); i++) {
@@ -92,26 +140,29 @@ void startBluetoothScan() {
           char* manufacturerdata = BLEUtils::buildHexData(NULL, (uint8_t*)foundDevices.getDevice(i).getManufacturerData().data(), foundDevices.getDevice(i).getManufacturerData().length());
           String result = process_ws02(manufacturerdata, addr);
 
-          StaticJsonDocument<JSON_OBJECT_SIZE(6)> sensorDataDoc;
-          DeserializationError e = deserializeJson(sensorDataDoc, dataJSON);
+          StaticJsonDocument<JSON_OBJECT_SIZE(15)> sensorDataDoc;
+          DeserializationError e = deserializeJson(sensorDataDoc, result);
           if (e) {
             Serial.print("deserializeJson() failed with code ");
             Serial.println(e.c_str());
           } else {
             JsonObject newSensor = Sensors.createNestedObject();
-            newSensor["address"] = sensorDataDoc["address"];
-            newSensor["temp"] = sensorDataDoc["temp"];
-            newSensor["hum"] = sensorDataDoc["hum"];
-            newSensor["volts"] = sensorDataDoc["volts"];
+            newSensor["address"] = addr;
+            newSensor["temp"] = sensorDataDoc["temp"].as<double>();
+            newSensor["hum"] = sensorDataDoc["hum"].as<double>();
+            newSensor["volts"] = sensorDataDoc["volts"].as<double>();
+            newSensor["time"] = sensorDataDoc["time"];
           }
 
           free(manufacturerdata);
           pBLEScan->clearResults(); // delete results fromBLEScan buffer to release memory
-          Serial.println("Data collected from: " + sensorDataDoc["address"]);
+          Serial.println("Data collected from: " + sensorDataDoc["address"].as<String>());
         }
       }
-      serializeJsonPretty(doc. Serial);
+      serializeJsonPretty(doc, Serial);
+      Serial.println();
     }
+    Serial.println("Scan complete!");
     vTaskDelay(500 / portTICK_PERIOD_MS);
   }
 }
