@@ -10,7 +10,7 @@ const String page PROGMEM = "<head>"
                             " </head>"
                             " <body>"
                             " <h1>HomeMonitor: </h1><div id=\"text\">"
-                            "</div>\r\n"
+                            " </div>\r\n"
                             " <script>\r\n"
                             " $(document).ready(function(){\r\n"
                             " setInterval(getData,1000);\r\n"
@@ -38,8 +38,9 @@ const String page PROGMEM = "<head>"
                             "     parsedData += \"<p> ------ Sensor Name: \" + s.rooms[i].sensors[j].sensorname + \"</p>\";\r\n"
                             "     parsedData += \"<p> ------ Measured Temperature: \" + s.rooms[i].sensors[j].temperature + \"</p>\";\r\n"
                             "     parsedData += \"<p> ------ Measured Humidity: \" + s.rooms[i].sensors[j].humidity + \"</p>\";\r\n"
-                            "   parsedData += \"<br>\";\r\n"
+                            "     parsedData += \"<br>\";\r\n"
                             "   }\r\n"
+                            "   parsedData += \"<br>\";\r\n"
                             "  }\r\n"
 
                             "  $('#text').html(parsedData);\r\n"
@@ -54,8 +55,8 @@ const String page PROGMEM = "<head>"
 
 WebServer server(80);
 
-const char* ssid = "trishypoo";
-const char* password = "gingerhair";
+const char* ssid = "HomeMonitorTest";
+const char* password = "h0m3m0n1t0r";
 String text = "Collecting Data.";  //Data to send to web page.
 
 House* house1 = new House("House 1");
@@ -63,16 +64,25 @@ House* house1 = new House("House 1");
 void setup(){
   Serial.begin(115200);
 
-  initialiseWebServer();
+  //initialiseWebServer();
 
-  house1->addRoom(new Room("Bedroom"));
-  house1->getRoom("Bedroom")->addSensor(new Thermobeacon("Sensor1", "b5:70:00:00:06:c4"));
-  house1->getRoom("Bedroom")->addSensor(new Thermobeacon("Sensor2", "b5:70:00:00:07:db"));
-  house1->addRoom(new Room("Bathroom"));
-  house1->getRoom("Bathroom")->addSensor(new OneWireTempSensor("Sensor3", 23));
+  /*house1->addRoom(new Room("Bedroom"));
+  house1->addRoom(new Room("Kitchen"));
+  house1->addRoom(new Room("Utility Room"));
+  house1->addRoom(new Room("Garage"));
+
+  house1->getRoom("Bedroom")->addSensor(new Thermobeacon("Window", "b5:70:00:00:06:c4"));
+  house1->getRoom("Bedroom")->addSensor(new DummyTemperatureSensor("Nightstand"));
+
+  house1->getRoom("Kitchen")->addSensor(new Thermobeacon("Cupboard", "b5:70:00:00:07:db"));
+
+  house1->getRoom("Utility Room")->addSensor(new OneWireTempSensor("Hot Water Tank", 23));
+
+  house1->getRoom("Garage")->addSensor(new DummyTemperatureSensor("Skylight"));
+  house1->getRoom("Garage")->addSensor(new DummyHumiditySensor("Bike Rack"));
 
   text = house1->toJSON();
-  Serial.println(text);
+  Serial.println(text);*/
 
 }
 
