@@ -13,14 +13,15 @@ const char* ssid     = "BTWholeHome-QZG";
 const char* password = "DLvJdC6QhrQp";
 
 const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 0;
-const int   daylightOffset_sec = 3600;
+const long gmtOffset_sec = 0;
+const int daylightOffset_sec = 3600;
 
 TaskHandle_t Task1, Task2;
+String dataJSON = "";
 
 void setup() {
   Serial.begin(115200);
-  
+
   // Connect to Wi-Fi
   Serial.print("Connecting to ");
   Serial.println(ssid);
@@ -36,8 +37,10 @@ void setup() {
 
   // Init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  
-  xTaskCreate(startBluetoothScan, "BluetoothTask", 20000, NULL, 0, &Task1);
+
+  xTaskCreate(startBluetoothScan, "BluetoothTask", 5000, NULL, 0, &Task1);
+  xTaskCreate(printData, "PrintTask", 5000, NULL, 0, &Task2);
+
 }
 
 double value_from_hex_data(const char* service_data, int offset, int data_length, bool reverse, bool canBeNegative = true) {
@@ -81,11 +84,11 @@ String process_ws02( char* manufacturerdata, String address) {
   char currentTimeStamp[20] = "";
 
   struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
+  if (!getLocalTime(&timeinfo)) {
     Serial.println("Failed to obtain time");
     String("01/01/1900-00:00:00").toCharArray(currentTimeStamp, 20);
   }
-  strftime(currentTimeStamp,20, "%m/%d/%y-%H:%M:%S", &timeinfo);
+  strftime(currentTimeStamp, 20, "%m/%d/%y-%H:%M:%S", &timeinfo);
 
   StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
 
@@ -95,7 +98,6 @@ String process_ws02( char* manufacturerdata, String address) {
   doc["volts"] = voltage;
   doc["time"] = currentTimeStamp;
 
-  //Limit responses to realistic data. (Thermobeacons have max operating temp. of 65 Degrees C)
   //  Serial.print("Temperature:");
   //  Serial.println(temp);
   //  Serial.print("Humidity:");
@@ -159,11 +161,20 @@ void startBluetoothScan(void * pvParameters) {
           Serial.println("Data collected from: " + sensorDataDoc["address"].as<String>());
         }
       }
-      serializeJsonPretty(doc, Serial);
+      String jsonBuffer = "";
+      serializeJsonPretty(doc, jsonBuffer);
+      dataJSON = jsonBuffer;
       Serial.println();
     }
     Serial.println("Scan complete!");
-    vTaskDelay(500 / portTICK_PERIOD_MS);
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
+  }
+}
+
+void printData(void * pvParameters) {
+  while (true) {
+    Serial.println(dataJSON);
+    vTaskDelay(2000 / portTICK_PERIOD_MS);
   }
 }
 
