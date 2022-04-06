@@ -17,7 +17,7 @@ const long gmtOffset_sec = 0;
 const int daylightOffset_sec = 3600;
 
 TaskHandle_t Task1, Task2;
-String dataJSON = "";
+String dataJson = "";
 
 void setup() {
   Serial.begin(115200);
@@ -38,7 +38,7 @@ void setup() {
   // Init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
-  xTaskCreate(startBluetoothScan, "BluetoothTask", 5000, NULL, 0, &Task1);
+  xTaskCreate(startBluetoothScan, "BluetoothTask", 100000, NULL, 0, &Task1);
   xTaskCreate(printData, "PrintTask", 5000, NULL, 0, &Task2);
 
 }
@@ -163,7 +163,8 @@ void startBluetoothScan(void * pvParameters) {
       }
       String jsonBuffer = "";
       serializeJsonPretty(doc, jsonBuffer);
-      dataJSON = jsonBuffer;
+      //updateThermobeacondataJson(jsonBuffer);
+      dataJson = jsonBuffer;
       Serial.println();
     }
     Serial.println("Scan complete!");
@@ -172,11 +173,15 @@ void startBluetoothScan(void * pvParameters) {
 }
 
 void printData(void * pvParameters) {
+  Serial.print("Task2 running on core ");
+  Serial.println(xPortGetCoreID());
   while (true) {
-    Serial.println(dataJSON);
+    Serial.println(dataJson);
     vTaskDelay(2000 / portTICK_PERIOD_MS);
   }
 }
+
+
 
 
 void loop() {

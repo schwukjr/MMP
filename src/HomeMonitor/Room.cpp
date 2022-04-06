@@ -30,13 +30,13 @@ class Room {
       numberOfSensors--;
     }
 
-    double getTemperature() {
+    double getTemperature(String thermobeaconDataJson) {
       double tempSum = 0;
       int validTempCount = 0;
       for (int i = 0; i < numberOfSensors; i++) {
-        String dataJSON = sensors[i]->getData();
-        StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
-        DeserializationError e = deserializeJson(doc, dataJSON);
+        String dataJson = sensors[i]->getData(thermobeaconDataJson);
+      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
+        DeserializationError e = deserializeJson(doc, dataJson);
         if (e) {
           Serial.print("deserializeJson() failed with code ");
           Serial.println(e.c_str());
@@ -51,12 +51,12 @@ class Room {
       return (tempSum / validTempCount);
     }
 
-    double getTemperature(String n) {
+    double getTemperature(String n, String thermobeaconDataJson) {
       for (int i = 0; i < numberOfSensors; i++) {
         if (sensors[i]->name == n) {
-          String dataJSON = sensors[i]->getData();
-          StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
-          DeserializationError e = deserializeJson(doc, dataJSON);
+          String dataJson = sensors[i]->getData(thermobeaconDataJson);
+      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
+          DeserializationError e = deserializeJson(doc, thermobeaconDataJson);
           if (e) {
             Serial.print("deserializeJson() failed with code ");
             Serial.println(e.c_str());
@@ -68,11 +68,11 @@ class Room {
       return -100.00;
     }
 
-    double getTemperature(int index) {
+    double getTemperature(int index, String thermobeaconDataJson) {
       if (index <= numberOfSensors) {
-        String dataJSON = sensors[index]->getData();
-        StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
-        DeserializationError e = deserializeJson(doc, dataJSON);
+        String dataJson = sensors[index]->getData(thermobeaconDataJson);
+      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
+        DeserializationError e = deserializeJson(doc, dataJson);
         if (e) {
           Serial.print("deserializeJson() failed with code ");
           Serial.println(e.c_str());
@@ -84,13 +84,13 @@ class Room {
     }
 
 
-    double getHumidity() {
+    double getHumidity(String thermobeaconDataJson) {
       double humSum = 0;
       int validHumCount = 0;
       for (int i = 0; i < numberOfSensors; i++) {
-        String dataJSON = sensors[i]->getData();
-        StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
-        DeserializationError e = deserializeJson(doc, dataJSON);
+        String dataJson = sensors[i]->getData(thermobeaconDataJson);
+      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
+        DeserializationError e = deserializeJson(doc, dataJson);
         if (e) {
           Serial.print("deserializeJson() failed with code ");
           Serial.println(e.c_str());
@@ -104,12 +104,12 @@ class Room {
       return (humSum / validHumCount);
     }
 
-    double getHumidity(String n) {
+    double getHumidity(String n, String thermobeaconDataJson) {
       for (int i = 0; i < numberOfSensors; i++) {
         if (sensors[i]->name == n) {
-          String dataJSON = sensors[i]->getData();
-          StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
-          DeserializationError e = deserializeJson(doc, dataJSON);
+          String dataJson = sensors[i]->getData(thermobeaconDataJson);
+      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
+          DeserializationError e = deserializeJson(doc, dataJson);
           if (e) {
             Serial.print("deserializeJson() failed with code ");
             Serial.println(e.c_str());
@@ -121,11 +121,11 @@ class Room {
       return -100.00;
     }
 
-    double getHumidity(int index) {
+    double getHumidity(int index, String thermobeaconDataJson) {
       if (index <= numberOfSensors) {
-        String dataJSON = sensors[index]->getData();
-        StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
-        DeserializationError e = deserializeJson(doc, dataJSON);
+        String dataJson = sensors[index]->getData(thermobeaconDataJson);
+      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
+        DeserializationError e = deserializeJson(doc, dataJson);
         if (e) {
           Serial.print("deserializeJson() failed with code ");
           Serial.println(e.c_str());
@@ -136,18 +136,18 @@ class Room {
       return -100.00;
     }
 
-    String getData() {
+    String getData(String thermobeaconDataJson) {
       double tempSum = 0;
       int validTempCount = 0;
       double humSum = 0;
       int validHumCount = 0;
 
       for (int i = 0; i < numberOfSensors; i++) {
-        String dataJSON = sensors[i]->getData();
-        StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
-        DeserializationError e = deserializeJson(doc, dataJSON);
+        String dataJson = sensors[i]->getData(thermobeaconDataJson);
+        StaticJsonDocument<JSON_OBJECT_SIZE(1500)> doc;
+        DeserializationError e = deserializeJson(doc, dataJson);
         if (e) {
-          Serial.print("deserializeJson() failed with code ");
+          Serial.print("deserializeJson() failed there with code ");
           Serial.println(e.c_str());
         } else {
           if (doc["temp"].as<double>() != -100.00) {
@@ -161,7 +161,7 @@ class Room {
         }
       }
       
-      StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
+      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
       doc["temp"] = tempSum / validTempCount;
       doc["hum"] = humSum / validHumCount;
 
@@ -170,17 +170,17 @@ class Room {
       return returnJSON;
     }
 
-    String getData(String n) {
+    String getData(String n, String thermobeaconDataJson) {
       for (int i = 0; i < numberOfSensors; i++) {
         if (sensors[i]->name == n) {
-          return sensors[i]->getData();
+          return sensors[i]->getData(thermobeaconDataJson);
         }
       }
     }
 
-    String getData(int index) {
+    String getData(int index, String thermobeaconDataJson) {
       if (index <= numberOfSensors) {
-        return sensors[index]->getData();
+        return sensors[index]->getData(thermobeaconDataJson);
       }
     }
 

@@ -4,69 +4,32 @@
 #include <WiFiClient.h>
 #include <WebServer.h>
 
-
-const String page PROGMEM = "<head>"
-                            " <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js\"></script>"
-                            " </head>"
-                            " <body>"
-                            " <h1>HomeMonitor: </h1><div id=\"text\">"
-                            " </div>\r\n"
-                            " <script>\r\n"
-                            " $(document).ready(function(){\r\n"
-                            " setInterval(getData,1000);\r\n"
-                            " function getData(){\r\n"
-                            " $.ajax({\r\n"
-                            "  type:\"GET\",\r\n"
-                            "  url:\"data\",\r\n"
-                            "  success: function(data){\r\n" //  "  \r\n"
-
-                            "  let s = JSON.parse(data);\r\n"
-                            "  let parsedData = \"\";\r\n"
-
-                            "  parsedData += \"<p>House Name: \" + s.housename + \"</p>\";\r\n"
-                            "  parsedData += \"<p>Number of Rooms: \" + s.numberofrooms + \"</p>\";\r\n"
-                            "  parsedData += \"<p>Rooms:</p>\";\r\n"
-
-                            "  for (let i = 0; i < s.numberofrooms; i++) {\r\n"
-                            "   parsedData += \"<p> --- Room Name: \" + s.rooms[i].roomname + \"</p>\";\r\n"
-                            "   parsedData += \"<p> --- Average Temperature: \" + s.rooms[i].averagetemperature + \"</p>\";\r\n"
-                            "   parsedData += \"<p> --- Average Humidity: \" + s.rooms[i].averagehumidity + \"</p>\";\r\n"
-                            "   parsedData += \"<p> --- Number of Sensors: \" + s.rooms[i].numberofsensors + \"</p>\";\r\n"
-                            "   parsedData += \"<p> --- Sensors:</p>\";\r\n"
-
-                            "   for (let j = 0; j < s.rooms[i].numberofsensors; j++){\r\n"
-                            "     parsedData += \"<p> ------ Sensor Name: \" + s.rooms[i].sensors[j].sensorname + \"</p>\";\r\n"
-                            "     parsedData += \"<p> ------ Measured Temperature: \" + s.rooms[i].sensors[j].temperature + \"</p>\";\r\n"
-                            "     parsedData += \"<p> ------ Measured Humidity: \" + s.rooms[i].sensors[j].humidity + \"</p>\";\r\n"
-                            "     parsedData += \"<br>\";\r\n"
-                            "   }\r\n"
-                            "   parsedData += \"<br>\";\r\n"
-                            "  }\r\n"
-
-                            "  $('#text').html(parsedData);\r\n"
-                            "}\r\n"
-                            "}).done(function() {\r\n"
-                            "  console.log('ok');\r\n"
-                            "})\r\n"
-                            "}\r\n"
-                            "});"
-                            "</script>\r\n"
-                            "</body>";
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 0;
+const int daylightOffset_sec = 3600;
 
 WebServer server(80);
 
-const char* ssid = "HomeMonitorTest";
-const char* password = "h0m3m0n1t0r";
+const char* ssid = "BTWholeHome-QZG";
+const char* password = "DLvJdC6QhrQp";
 String text = "Collecting Data.";  //Data to send to web page.
+
+String thermobeaconDataJson = "";
+
+TaskHandle_t Task1, Task2;
+static SemaphoreHandle_t mutex;
 
 House* house1 = new House("House 1");
 
-void setup(){
+void setup() {
   Serial.begin(115200);
 
-  //initialiseWebServer();
+  initialiseWebServer();
 
-  /*house1->addRoom(new Room("Bedroom"));
+  // Init and get the time
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+
+  house1->addRoom(new Room("Bedroom"));
   house1->addRoom(new Room("Kitchen"));
   house1->addRoom(new Room("Utility Room"));
   house1->addRoom(new Room("Garage"));
@@ -79,54 +42,37 @@ void setup(){
   house1->getRoom("Utility Room")->addSensor(new OneWireTempSensor("Hot Water Tank", 23));
 
   house1->getRoom("Garage")->addSensor(new DummyTemperatureSensor("Skylight"));
-  house1->getRoom("Garage")->addSensor(new DummyHumiditySensor("Bike Rack"));
+  house1->getRoom("Garage")->addSensor(new DummyHumiditySensor("Sink"));
 
-  text = house1->toJSON();
-  Serial.println(text);*/
+  mutex = xSemaphoreCreateMutex();
+
+  xTaskCreatePinnedToCore(startBluetoothScan, "BluetoothTask", 70000, NULL, 1, &Task1, 1);
+  xTaskCreate(repeat, "repeatTask", 30000, NULL, 0, &Task2);
 
 }
 
-void loop()
-{
-  // put your main code here, to run repeatedly:
+void repeat(void * pvParameters) {
+  Serial.print("Task2 running on core ");
+  Serial.println(xPortGetCoreID());
 
-  server.handleClient();
+  vTaskDelay(30000 / portTICK_PERIOD_MS); //Wait 30 seconds before beginning processing, to collect useful data beforehand.
+
+  while (true) {
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    if (thermobeaconDataJson != "") {
+      Serial.println(house1->toJSON(thermobeaconDataJson));
+    }
+    xSemaphoreGive(mutex);
+  }
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  //server.handleClient();
+
 
   //  text = house1->getRoom("Bedroom")->getData();
   //  Serial.println(text);
   //delay(2000);
-}
-
-void initialiseWebServer() {
-  WiFi.mode(WIFI_STA);  //Connect to your wifi
-  WiFi.begin(ssid, password);
-
-  Serial.println("Connecting to ");
-  Serial.print(ssid);
-
-  //Wait for WiFi to connect
-  while (WiFi.waitForConnectResult() != WL_CONNECTED) {
-    Serial.print(".");
-    delay(500);
-  }
-
-  //If connection successful show IP address in serial monitor
-  Serial.println("");
-  Serial.print("Connected to ");
-  Serial.println(ssid);
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());  //IP address assigned to your ESP
-  //----------------------------------------------------------------
-
-  server.on("/", []() {
-    server.send(200, "text/html", page);
-  });
-  server.on("/data", []() {
-    //Serial.println(text);
-    server.send(200, "text/plain", text);
-    //text = "";
-  });
-
-  server.begin();  //Start server
-  Serial.println("HTTP server started");
 }
