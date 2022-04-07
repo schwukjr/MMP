@@ -49,6 +49,8 @@ void setup() {
   xTaskCreatePinnedToCore(startBluetoothScan, "BluetoothTask", 70000, NULL, 1, &Task1, 1);
   xTaskCreate(repeat, "repeatTask", 30000, NULL, 0, &Task2);
 
+  vTaskDelete(NULL); //End the Setup() and Loop() Tasks, as they are no longer needed.
+
 }
 
 void repeat(void * pvParameters) {
@@ -69,10 +71,5 @@ void repeat(void * pvParameters) {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  //server.handleClient();
-
-
-  //  text = house1->getRoom("Bedroom")->getData();
-  //  Serial.println(text);
-  //delay(2000);
+  
 }

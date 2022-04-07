@@ -51,10 +51,10 @@ void startBluetoothScan(void * pvParameters) {
           free(manufacturerdata);
           pBLEScan->clearResults(); // delete results fromBLEScan buffer to release memory
           Serial.println("Data collected from: " + sensorDataDoc["address"].as<String>());
+//          Serial.println("Count: " + String(foundDevices.getCount()));
         }
       }
 
-      Serial.println("I make it here!");
 
       
       String jsonBuffer = "";

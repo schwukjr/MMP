@@ -1,14 +1,18 @@
 #include "Arduino.h"
 #include "Sensor.cpp"
+#include "Cycle.cpp"
 
-#define MAX_SENSORS 50
+#define MAX_SENSORS 10
+#define MAX_CYCLES 5
 
 class Room {
   public:
     //Attributes
     String name;
     Sensor* sensors[MAX_SENSORS];
+    Cycle* cycles[MAX_CYCLES];
     int numberOfSensors = 0;
+    int numberOfCycles = 0;
 
     //Constructors and Destructors(including overloaded)
     Room() {};
@@ -30,12 +34,25 @@ class Room {
       numberOfSensors--;
     }
 
+    void addSensor(String cycleJson) {
+      if (numberOfCycles <= MAX_CYCLES) {
+        cycles[numberOfCycles] = new Cycle(cycleJson);
+        numberOfCycles++;
+      } else {
+        Serial.println("Cycle limit for room reached.");
+      }
+    }
+
+    void removeCycle() {
+      numberOfCycles--;
+    }
+
     double getTemperature(String thermobeaconDataJson) {
       double tempSum = 0;
       int validTempCount = 0;
       for (int i = 0; i < numberOfSensors; i++) {
         String dataJson = sensors[i]->getData(thermobeaconDataJson);
-      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
+        StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
         DeserializationError e = deserializeJson(doc, dataJson);
         if (e) {
           Serial.print("deserializeJson() failed with code ");
@@ -55,7 +72,7 @@ class Room {
       for (int i = 0; i < numberOfSensors; i++) {
         if (sensors[i]->name == n) {
           String dataJson = sensors[i]->getData(thermobeaconDataJson);
-      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
+          StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
           DeserializationError e = deserializeJson(doc, thermobeaconDataJson);
           if (e) {
             Serial.print("deserializeJson() failed with code ");
@@ -71,7 +88,7 @@ class Room {
     double getTemperature(int index, String thermobeaconDataJson) {
       if (index <= numberOfSensors) {
         String dataJson = sensors[index]->getData(thermobeaconDataJson);
-      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
+        StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
         DeserializationError e = deserializeJson(doc, dataJson);
         if (e) {
           Serial.print("deserializeJson() failed with code ");
@@ -89,7 +106,7 @@ class Room {
       int validHumCount = 0;
       for (int i = 0; i < numberOfSensors; i++) {
         String dataJson = sensors[i]->getData(thermobeaconDataJson);
-      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
+        StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
         DeserializationError e = deserializeJson(doc, dataJson);
         if (e) {
           Serial.print("deserializeJson() failed with code ");
@@ -108,7 +125,7 @@ class Room {
       for (int i = 0; i < numberOfSensors; i++) {
         if (sensors[i]->name == n) {
           String dataJson = sensors[i]->getData(thermobeaconDataJson);
-      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
+          StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
           DeserializationError e = deserializeJson(doc, dataJson);
           if (e) {
             Serial.print("deserializeJson() failed with code ");
@@ -124,7 +141,7 @@ class Room {
     double getHumidity(int index, String thermobeaconDataJson) {
       if (index <= numberOfSensors) {
         String dataJson = sensors[index]->getData(thermobeaconDataJson);
-      StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
+        StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
         DeserializationError e = deserializeJson(doc, dataJson);
         if (e) {
           Serial.print("deserializeJson() failed with code ");
@@ -160,7 +177,7 @@ class Room {
           }
         }
       }
-      
+
       StaticJsonDocument<JSON_OBJECT_SIZE(15)> doc;
       doc["temp"] = tempSum / validTempCount;
       doc["hum"] = humSum / validHumCount;

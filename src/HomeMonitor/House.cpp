@@ -8,6 +8,7 @@
 
 #define MAX_ROOMS 10
 #define MAX_SENSORS_PER_ROOM 10
+#define MAX_CYCLES_PER_ROOM 5
 
 class House {
   public:
