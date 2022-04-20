@@ -63,7 +63,7 @@ void startBluetoothScan(void * pvParameters) {
       Serial.println();
     }
     Serial.println("Scan complete!");
-    Serial.println(thermobeaconDataJson);
+    //Serial.println(thermobeaconDataJson);
     vTaskDelay(2000 / portTICK_PERIOD_MS);
   }
 }

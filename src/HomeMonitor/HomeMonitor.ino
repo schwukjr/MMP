@@ -16,7 +16,7 @@ String text = "Collecting Data.";  //Data to send to web page.
 
 String thermobeaconDataJson = "";
 
-TaskHandle_t Task1, Task2;
+TaskHandle_t Task1, Task2, MaintainTaskHandle;
 static SemaphoreHandle_t mutex;
 
 House* house1 = new House("House 1");
@@ -35,19 +35,16 @@ void setup() {
   house1->addRoom(new Room("Garage"));
 
   house1->getRoom("Bedroom")->addSensor(new Thermobeacon("Window", "b5:70:00:00:06:c4"));
-  house1->getRoom("Bedroom")->addSensor(new DummyTemperatureSensor("Nightstand"));
+  house1->getRoom("Bedroom")->addControl(new ControlSystem("Heater", "temp", true));
+  house1->getRoom("Bedroom")->addCycle("{\"type\": \"temp\",  \"goal\": 22,  \"startTime\": 1000,  \"endTime\": 2000,  \"activeDays\": \"mtwt-ss\",  \"active\": true}\"}");
 
   house1->getRoom("Kitchen")->addSensor(new Thermobeacon("Cupboard", "b5:70:00:00:07:db"));
 
-  house1->getRoom("Utility Room")->addSensor(new OneWireTempSensor("Hot Water Tank", 23));
-
-  house1->getRoom("Garage")->addSensor(new DummyTemperatureSensor("Skylight"));
-  house1->getRoom("Garage")->addSensor(new DummyHumiditySensor("Sink"));
-
   mutex = xSemaphoreCreateMutex();
 
-  xTaskCreatePinnedToCore(startBluetoothScan, "BluetoothTask", 70000, NULL, 1, &Task1, 1);
-  xTaskCreate(repeat, "repeatTask", 30000, NULL, 0, &Task2);
+  xTaskCreate(startBluetoothScan, "BluetoothTask", 70000, NULL, 1, &Task1);
+  //  xTaskCreate(repeat, "repeatTask", 30000, NULL, 0, &Task2);
+  xTaskCreate(startMaintainingState, "MaintainTask", 30000, NULL, 0, &MaintainTaskHandle);
 
   vTaskDelete(NULL); //End the Setup() and Loop() Tasks, as they are no longer needed.
 
@@ -69,7 +66,25 @@ void repeat(void * pvParameters) {
   }
 }
 
+void startMaintainingState(void * pvParameters) {
+  Serial.print("Task2 running on core ");
+  Serial.println(xPortGetCoreID());
+
+  vTaskDelay(20000 / portTICK_PERIOD_MS);
+  Serial.println("Starting maintenance");
+  while (true) {
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    house1->maintainHome(thermobeaconDataJson);
+    xSemaphoreGive(mutex);
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+  }
+}
+
+void stopMaintainingState() {
+  vTaskDelete(MaintainTaskHandle);
+}
+
 void loop() {
   // put your main code here, to run repeatedly:
-  
+
 }

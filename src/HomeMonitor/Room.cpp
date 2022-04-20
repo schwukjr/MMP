@@ -1,9 +1,12 @@
 #include "Arduino.h"
 #include "Sensor.cpp"
 #include "Cycle.cpp"
+#include "ControlSystem.cpp"
 
 #define MAX_SENSORS 10
 #define MAX_CYCLES 5
+#define MAX_CONTROLS 5
+
 
 class Room {
   public:
@@ -11,8 +14,10 @@ class Room {
     String name;
     Sensor* sensors[MAX_SENSORS];
     Cycle* cycles[MAX_CYCLES];
+    ControlSystem* controls[MAX_CONTROLS];
     int numberOfSensors = 0;
     int numberOfCycles = 0;
+    int numberOfControls = 0;
 
     //Constructors and Destructors(including overloaded)
     Room() {};
@@ -34,7 +39,7 @@ class Room {
       numberOfSensors--;
     }
 
-    void addSensor(String cycleJson) {
+    void addCycle(String cycleJson) {
       if (numberOfCycles <= MAX_CYCLES) {
         cycles[numberOfCycles] = new Cycle(cycleJson);
         numberOfCycles++;
@@ -45,6 +50,19 @@ class Room {
 
     void removeCycle() {
       numberOfCycles--;
+    }
+
+    void addControl(ControlSystem* control) {
+      if (numberOfControls <= MAX_CONTROLS) {
+        controls[numberOfControls] = control;
+        numberOfControls++;
+      } else {
+        Serial.println("Control System limit for room reached.");
+      }
+    }
+
+    void removeControl() {
+      numberOfControls--;
     }
 
     double getTemperature(String thermobeaconDataJson) {
