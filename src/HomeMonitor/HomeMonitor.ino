@@ -2,21 +2,22 @@
 
 #include <WiFi.h>
 #include <WiFiClient.h>
-#include <WebServer.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncTCP.h>
 
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 0;
 const int daylightOffset_sec = 3600;
 
-WebServer server(80);
+AsyncWebServer server(80);
 
 const char* ssid = "BTWholeHome-QZG";
 const char* password = "DLvJdC6QhrQp";
-String text = "Collecting Data.";  //Data to send to web page.
+char text[5000];  //Data to send to web page.
 
 String thermobeaconDataJson = "";
 
-TaskHandle_t Task1, Task2, MaintainTaskHandle;
+TaskHandle_t BluetoothTaskHandle, OutputTaskHandle, MaintainTaskHandle;
 static SemaphoreHandle_t mutex;
 
 House* house1 = new House("House 1");
@@ -42,8 +43,8 @@ void setup() {
 
   mutex = xSemaphoreCreateMutex();
 
-  xTaskCreate(startBluetoothScan, "BluetoothTask", 70000, NULL, 1, &Task1);
-  //  xTaskCreate(repeat, "repeatTask", 30000, NULL, 0, &Task2);
+  xTaskCreate(startBluetoothScan, "BluetoothTask", 30000, NULL, 1, &BluetoothTaskHandle);
+  xTaskCreate(generateWebPageDataOutput, "OutputTask", 50000, NULL, 0, &OutputTaskHandle);
   xTaskCreate(startMaintainingState, "MaintainTask", 30000, NULL, 0, &MaintainTaskHandle);
 
   vTaskDelete(NULL); //End the Setup() and Loop() Tasks, as they are no longer needed.
@@ -51,7 +52,7 @@ void setup() {
 }
 
 void repeat(void * pvParameters) {
-  Serial.print("Task2 running on core ");
+  Serial.print("OutputTaskHandle running on core ");
   Serial.println(xPortGetCoreID());
 
   vTaskDelay(30000 / portTICK_PERIOD_MS); //Wait 30 seconds before beginning processing, to collect useful data beforehand.
@@ -67,22 +68,39 @@ void repeat(void * pvParameters) {
 }
 
 void startMaintainingState(void * pvParameters) {
-  Serial.print("Task2 running on core ");
+  Serial.print("MaintainTask running on core ");
   Serial.println(xPortGetCoreID());
 
-  vTaskDelay(20000 / portTICK_PERIOD_MS);
+  vTaskDelay(10000 / portTICK_PERIOD_MS); //Wait 30 seconds before beginning processing, to collect useful data beforehand.
+
   Serial.println("Starting maintenance");
   while (true) {
-    xSemaphoreTake(mutex, portMAX_DELAY);
-    house1->maintainHome(thermobeaconDataJson);
-    xSemaphoreGive(mutex);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    if (house1->maintainingState) {
+      xSemaphoreTake(mutex, portMAX_DELAY);
+      house1->maintainHome(thermobeaconDataJson);
+      xSemaphoreGive(mutex);
+    }
+    vTaskDelay(5000 / portTICK_PERIOD_MS);
   }
 }
-
 void stopMaintainingState() {
   vTaskDelete(MaintainTaskHandle);
 }
+
+void generateWebPageDataOutput(void * pvParameters) {
+  vTaskDelay(30000 / portTICK_PERIOD_MS); //Wait 30 seconds before beginning processing, to collect useful data beforehand.
+  Serial.print("OutputTaskHandle running on core ");
+  Serial.println(xPortGetCoreID());
+  while (true) {
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    String houseJson = house1->toJSON(thermobeaconDataJson);
+    xSemaphoreGive(mutex);
+    houseJson.toCharArray(text, houseJson.length()); 
+    Serial.println(text);
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
+  }
+}
+
 
 void loop() {
   // put your main code here, to run repeatedly:

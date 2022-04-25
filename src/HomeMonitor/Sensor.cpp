@@ -44,7 +44,7 @@ class Thermobeacon : public Sensor
     ~Thermobeacon() {};
 
     String getData(String thermobeaconDataJson)    {
-      Serial.println("\nGetting Thermobeacon Data.");
+      //Serial.println("Getting Thermobeacon Data.");
 
       StaticJsonDocument<JSON_OBJECT_SIZE(1500)> currentDataDoc;
       DeserializationError e = deserializeJson(currentDataDoc, thermobeaconDataJson);

@@ -53,6 +53,7 @@ class House {
     String name;
     Room* rooms[MAX_ROOMS];
     int numberOfRooms = 0;
+    bool maintainingState = true;
 
     //Constructors and Destructors(including overloaded)
     House() {};
@@ -164,9 +165,31 @@ class House {
 
         for (int j = 0; j < currentRoom->numberOfSensors; j++) {
           JsonObject jsonSensor = jsonSensorsInRoom.createNestedObject();
-          jsonSensor["sensorname"] = currentRoom->sensors[j]->name;
+          jsonSensor["name"] = currentRoom->sensors[j]->name;
           jsonSensor["temperature"] = currentRoom->getTemperature(j, thermobeaconDataJson);
           jsonSensor["humidity"] = currentRoom->getHumidity(j, thermobeaconDataJson);
+        }
+
+        JsonArray jsonCyclesInRoom = jsonRoom.createNestedArray("cycles");
+
+        for (int j = 0; j < currentRoom->numberOfCycles; j++) {
+          JsonObject jsonCycle = jsonCyclesInRoom.createNestedObject();
+          jsonCycle["type"] = currentRoom->cycles[j]->type;
+          jsonCycle["goal"] = currentRoom->cycles[j]->goal;
+          jsonCycle["starttime"] = currentRoom->cycles[j]->startTime;
+          jsonCycle["endtime"] = currentRoom->cycles[j]->endTime;
+          jsonCycle["activedays"] = currentRoom->cycles[j]->activeDays;
+          jsonCycle["active"] = currentRoom->cycles[j]->active;
+        }
+
+        JsonArray jsonControlsInRoom = jsonRoom.createNestedArray("controls");
+
+        for (int j = 0; j < currentRoom->numberOfControls; j++) {
+          JsonObject jsonControl = jsonControlsInRoom.createNestedObject();
+          jsonControl["name"] = currentRoom->controls[j]->name;
+          jsonControl["type"] = currentRoom->controls[j]->type;
+          jsonControl["additivesystem"] = currentRoom->controls[j]->additiveSystem;
+          jsonControl["enabled"] = currentRoom->controls[j]->enabled;
         }
       }
 
@@ -175,9 +198,50 @@ class House {
       return dataJson;
     }
 
+    //ToDo update function to deserialise control systems and cycles.
+    void constructWithJson(String inputJson) {
+      DynamicJsonDocument doc(2048);
+      DeserializationError e = deserializeJson(doc, inputJson);
+      if (e) {
+        Serial.print("deserializeJson() failed with code ");
+        Serial.println(e.c_str());
+      } else {
+        name = doc["name"].as<String>();
+        numberOfRooms = doc["numberofrooms"].as<int>();
+
+        for (int i = 0; i < numberOfRooms; i++) {
+          String roomName = doc["rooms"][i]["roomname"].as<String>();
+          int numberOfSensors = doc["rooms"][i]["numberofsensors"].as<int>();
+
+          Room* newRoom = new Room(roomName);
+
+          for (int j = 0; j < numberOfSensors; j++) {
+            String sensorType = doc["rooms"][i]["sensors"][j]["sensortype"].as<String>();
+            String sensorName = doc["rooms"][i]["sensors"][j]["sensorname"].as<String>();
+
+            if (sensorType == "Thermobeacon") {
+              String macAddr = doc["rooms"][i]["sensors"][j]["macaddress"].as<String>();
+              newRoom->addSensor(new Thermobeacon(sensorName, macAddr));
+            } else if (sensorType == "OneWire") {
+              int pin = doc["rooms"][i]["sensors"][j]["pinnumber"].as<int>();
+              newRoom->addSensor(new OneWireTempSensor(sensorName, pin));
+            } else if (sensorType == "DummyHybrid") {
+              newRoom->addSensor(new DummyHybridSensor(sensorName));
+            } else if (sensorType == "DummyTemp") {
+              newRoom->addSensor(new DummyTemperatureSensor(sensorName));
+            } else if (sensorType == "DummyHum") {
+              newRoom->addSensor(new DummyHumiditySensor(sensorName));
+            } else {
+              Serial.println("Sensor not found!");
+            }
+          }
+
+          addRoom(newRoom);
+        }
+      }
+    }
+
     void maintainHome(String thermobeaconDataJson) {
-
-
       for (int roomIndex = 0; roomIndex < numberOfRooms; roomIndex++) {
         //Iterate through each room
         Room* room = rooms[roomIndex];
@@ -207,23 +271,23 @@ class House {
                   Serial.println("Hum: " + String(currentVariableLevel));
                 }
 
-                if (currentControl->increasing == true && (currentVariableLevel < currentCycle->goal - 1)) {
+                if (currentControl->additiveSystem == true && (currentVariableLevel < currentCycle->goal - 1)) {
                   currentControl->enable();
-                } else if (currentControl->increasing == true && (currentVariableLevel > currentCycle->goal + 1)) {
+                } else if (currentControl->additiveSystem == true && (currentVariableLevel > currentCycle->goal + 1)) {
                   currentControl->disable();
 
                 }
 
-                if (currentControl->increasing == false && (currentVariableLevel > currentCycle->goal + 1)) {
+                if (currentControl->additiveSystem == false && (currentVariableLevel > currentCycle->goal + 1)) {
                   currentControl->enable();
-                } else if (currentControl->increasing == false && (currentVariableLevel < currentCycle->goal - 1)) {
+                } else if (currentControl->additiveSystem == false && (currentVariableLevel < currentCycle->goal - 1)) {
                   currentControl->disable();
                 }
 
 
 
               }
-              Serial.println("Control Enabled: " + String(currentControl->enabled));
+              Serial.println("Control Enabled: " + String(currentControl->enabled) + "\n");
             }
 
           }
@@ -231,7 +295,7 @@ class House {
 
 
 
-        //Once an active cycle is matched to a control system, use average room temperature/humidity to determine if the level needs to be raised or lowered, and if an appropriate system is available (based on "increasing" flag).
+        //Once an active cycle is matched to a control system, use average room temperature/humidity to determine if the level needs to be raised or lowered, and if an appropriate system is available (based on "additiveSystem" flag).
         //If current level is more than a set amount above/below goal, activate appropriate system.
         //If current level is within a set amount of goal, it can be left alone, and control system deactivated if not already. Move onto next cycle.
         //Continue iterating over each cycle indefinitely, using matching control system to raise, lower, or leave level alone.

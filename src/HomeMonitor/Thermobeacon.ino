@@ -64,7 +64,7 @@ void startBluetoothScan(void * pvParameters) {
     }
     Serial.println("Scan complete!");
     //Serial.println(thermobeaconDataJson);
-    vTaskDelay(2000 / portTICK_PERIOD_MS);
+    vTaskDelay(10000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -123,6 +123,7 @@ void updateThermobeaconDataJson(String newData) {
   xSemaphoreTake(mutex, portMAX_DELAY);
   thermobeaconDataJson = String(updatedData);
   Serial.println("Running for: " + String(millis() / 1000) + "s");
+  //Serial.println(thermobeaconDataJson);
   xSemaphoreGive(mutex);
 
 }
