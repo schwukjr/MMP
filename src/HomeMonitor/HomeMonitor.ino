@@ -54,8 +54,8 @@ const String page PROGMEM = "<head>"
 
 WebServer server(80);
 
-const char* ssid = "trishypoo";
-const char* password = "gingerhair";
+const char* ssid = "BTWholeHome-QZG";
+const char* password = "DLvJdC6QhrQp";
 String text = "Collecting Data.";  //Data to send to web page.
 
 House* house1 = new House("House 1");
