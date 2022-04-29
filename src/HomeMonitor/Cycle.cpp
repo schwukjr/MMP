@@ -19,6 +19,14 @@ class Cycle {
       sourceJson = json;
       constructFromSourceJson();
     }
+    Cycle(String t, double g, int st, int et, String ad, bool a) {
+      type = t;
+      goal = g;
+      startTime = st;
+      endTime = et;
+      activeDays = ad;
+      active = a;
+    }
     ~Cycle() {};
 
     //Concrete Methods
@@ -39,7 +47,7 @@ class Cycle {
         goal = doc["goal"].as<double>();
         startTime = doc["startTime"].as<int>();
         endTime = doc["endTime"].as<int>();
-        activeDays = doc["activeDays"].as<byte>();
+        activeDays = doc["activeDays"].as<String>();
         active = doc["active"].as<bool>();
       }
     }

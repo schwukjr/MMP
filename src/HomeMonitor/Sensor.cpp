@@ -4,11 +4,13 @@ class Sensor {
   public:
     //Attributes
     String name;
+    String type;
 
     //Constructors and Destructors(including overloaded)
     Sensor() {};
-    Sensor(String n) {
+    Sensor(String n, String t) {
       name = n;
+      type = t;
     }
     ~Sensor() {};
     //Concrete Methods
@@ -38,7 +40,7 @@ class Thermobeacon : public Sensor
     String address;
 
     Thermobeacon() {};
-    Thermobeacon(String n, String a): Sensor(n) {
+    Thermobeacon(String n, String t, String a): Sensor(n, t) {
       address = a;
     }
     ~Thermobeacon() {};
@@ -96,14 +98,14 @@ class OneWireTempSensor : public Sensor
     int pinNo;
 
     OneWireTempSensor() {};
-    OneWireTempSensor(String n, int i): Sensor(n) {
+    OneWireTempSensor(String n, String t, int i): Sensor(n, t) {
       pinNo = i;
     };
     ~OneWireTempSensor() {};
 
     String getData(String thermobeaconDataJson)
     {
-      Serial.println("\nGetting OneWire Temp Data");
+      //Serial.println("\nGetting OneWire Temp Data");
 
       OneWire oneWire(pinNo);
       DallasTemperature sensors(&oneWire);
@@ -125,12 +127,12 @@ class DummyHybridSensor : public Sensor
 
   public:
     DummyHybridSensor() {};
-    DummyHybridSensor(String n): Sensor(n) {};
+    DummyHybridSensor(String n, String t): Sensor(n, t) {};
     ~DummyHybridSensor() {};
 
     String getData(String thermobeaconDataJson)
     {
-      Serial.println("\nGetting Dummy Data");
+      //Serial.println("\nGetting Dummy Data");
       String dataJson = "";
       StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
       doc["temp"] = 25.2;
@@ -146,12 +148,12 @@ class DummyTemperatureSensor : public Sensor
 
   public:
     DummyTemperatureSensor() {};
-    DummyTemperatureSensor(String n): Sensor(n) {};
+    DummyTemperatureSensor(String n, String t): Sensor(n, t) {};
     ~DummyTemperatureSensor() {};
 
     String getData(String thermobeaconDataJson)
     {
-      Serial.println("\nGetting Dummy Data");
+      //Serial.println("\nGetting Dummy Data");
       String dataJson = "";
       StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
       doc["temp"] = 25.2;
@@ -167,12 +169,12 @@ class DummyHumiditySensor : public Sensor
 
   public:
     DummyHumiditySensor() {};
-    DummyHumiditySensor(String n): Sensor(n) {};
+    DummyHumiditySensor(String n, String t): Sensor(n, t) {};
     ~DummyHumiditySensor() {};
 
     String getData(String thermobeaconDataJson)
     {
-      Serial.println("\nGetting Dummy Data");
+      //Serial.println("\nGetting Dummy Data");
       String dataJson = "";
       StaticJsonDocument<JSON_OBJECT_SIZE(6)> doc;
       doc["temp"] = '!';

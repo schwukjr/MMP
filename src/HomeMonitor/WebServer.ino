@@ -1,27 +1,84 @@
-const char page[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML><html>
+const char page[] PROGMEM = R"=="==(
 <head>
-  <title>ESP Input Form</title>
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js\"></script>
-  <script src=\"https://code.jquery.com/jquery-1.7.1.min.js\"></script>
+  
+  <title>HomeMonitor</title>
+  
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://code.jquery.com/jquery-1.7.1.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+
 </head>
 
 <body>
   <h1>HomeMonitor:</h1>
-  <br>
-  <form action="/get">
-  Source JSON: <input type="text" name="sourcejson">
-  <input type="submit" value="Submit">
-  </form>
-  <br>
-  <p><a href="/toggle"><button class="button">Enable/Disable System</button></a></p>
-  <br>
-  <h2>Current Values:</hr><div id="text"></div>
 
+  <div class="container">
+    <div class="row align-items-start">
+      <div class="col">
+        <form action="/get">
+          <div class="row">
+            <div class="col">
+              <p>Source JSON:</p>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <textarea type="text" id="sourcejson" name="sourcejson" rows="24" cols="60"></textarea>
+            </div>
+          </div>
+          <div class="row">
+            <div class="btn-group-vertical" role="group" aria-label="Basic example">
+              <input type="button" id="btnprettify" value="Format" class="btn btn-secondary">
+              <input type="submit" value="Submit" class="btn btn-primary">
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="col">
+        <h3>System Messages:</h3>
+        <textarea type="text" id="msgs" name="msgs" rows="24" cols="75" disabled readonly>
+          No System Messages.
+        </textarea>  
+      </div>
+    </div>
+    <div class="row align-items-start">
+      <div class="col">
+        <h2>Current Values:</h2><div id="text"></div>
+      </div>
+      <div class="col">
+        <p><a href="/toggle"><button class="btn btn-success">Enable/Disable System</button></a></p>
+        <p><a href="/clear_rooms"><button class="btn btn-primary">Clear Rooms</button></a></p>
+      </div>
+    </div>
+  </div>
+  
   <script>
     $(document).ready(function(){
-      setInterval(getData,1000);
+      setInterval(getData,3000);
+      setInterval(getSystemMessages,1000);
+      document.getElementById ("btnprettify").addEventListener ("click", prettifyJson, false);
+      load();
+
+      function load(){
+        $.ajax({
+          type:"GET",
+          url:"load",
+          success: function(data){        
+            $('#sourcejson').html(data);
+            prettifyJson();
+          }  
+        }) 
+      }
+      
+      function prettifyJson(){ // Derived from https://stackoverflow.com/a/26324037
+        var uglyJson = document.getElementById("sourcejson").value;
+        var jsonObject = JSON.parse(uglyJson);
+        var prettyJson = JSON.stringify(jsonObject, undefined, 4);
+        document.getElementById('sourcejson').value = prettyJson;
+      }
+      
       function getData(){
         $.ajax({
           type:"GET",
@@ -31,22 +88,44 @@ const char page[] PROGMEM = R"rawliteral(
             let s = JSON.parse(data);
             let parsedData = "";
 
-            parsedData += "<p>House Name: " + s.housename + "</p>";
+            parsedData += "<p>House Name: " + s.name + "</p>";
             parsedData += "<p>Number of Rooms: " + s.numberofrooms + "</p>";
             parsedData += "<p>Rooms:</p>";
+            
             for (let i = 0; i < s.numberofrooms; i++) {
-              parsedData += "<p> --- Room Name: " + s.rooms[i].roomname + "</p>";
-              parsedData += "<p> --- Average Temperature: " + s.rooms[i].averagetemperature + "</p>";
-              parsedData += "<p> --- Average Humidity: " + s.rooms[i].averagehumidity + "</p>";
-              parsedData += "<p> --- Number of Sensors: " + s.rooms[i].numberofsensors + "</p>";
-              parsedData += "<p> --- Sensors:</p>";
+              parsedData += "<textarea type=\"text\" id=\"sourcejson\" name=\"sourcejson\" rows=\"18\" cols=\"60\">"
+              parsedData += "--- Room Name: " + s.rooms[i].name + "\n";
+              parsedData += "--- Average Temperature: " + s.rooms[i].averagetemperature + "\n";
+              parsedData += "--- Average Humidity: " + s.rooms[i].averagehumidity + "\n\n";
+              parsedData += "--- Number of Sensors: " + s.rooms[i].numberofsensors + "\n";
 
               for (let j = 0; j < s.rooms[i].numberofsensors; j++){
-                parsedData += "<p> ------ Sensor Name: " + s.rooms[i].sensors[j].sensorname + "</p>";
-                parsedData += "<p> ------ Measured Temperature: " + s.rooms[i].sensors[j].temperature + "</p>";
-                parsedData += "<p> ------ Measured Humidity: " + s.rooms[i].sensors[j].humidity + "</p>";
-                parsedData += "<br>";
+                parsedData += "------ Sensor Name: " + s.rooms[i].sensors[j].name + "\n";
+                parsedData += "------ Type: " + s.rooms[i].sensors[j].type + "\n";
+                parsedData += "------ Measured Temperature: " + s.rooms[i].sensors[j].temperature + "\n";
+                parsedData += "------ Measured Humidity: " + s.rooms[i].sensors[j].humidity + "\n\n";
               }
+              
+              parsedData += "--- Number of Cycles: " + s.rooms[i].numberofcycles + "\n";
+
+              for (let j = 0; j < s.rooms[i].numberofcycles; j++){
+                parsedData += "------ Type: " + s.rooms[i].cycles[j].type + "\n";
+                parsedData += "------ Goal: " + s.rooms[i].cycles[j].goal + "\n";
+                parsedData += "------ Start Time: " + s.rooms[i].cycles[j].starttime + "\n";
+                parsedData += "------ End Time: " + s.rooms[i].cycles[j].endtime + "\n";
+                parsedData += "------ Active Days: " + s.rooms[i].cycles[j].activedays + "\n";
+                parsedData += "------ Active: " + s.rooms[i].cycles[j].active + "\n\n";
+              }
+
+              parsedData += "--- Number of Controls: " + s.rooms[i].numberofcontrols + "\n";
+
+              for (let j = 0; j < s.rooms[i].numberofcontrols; j++){
+                parsedData += "------ Name: " + s.rooms[i].controls[j].name + "\n";
+                parsedData += "------ Type: " + s.rooms[i].controls[j].type + "\n";
+                parsedData += "------ Additive System: " + s.rooms[i].controls[j].additivesystem + "\n";
+                parsedData += "------ Enabled: " + s.rooms[i].controls[j].enabled + "\n";
+              }
+              parsedData += "</textarea>";
               parsedData += "<br>";
             }
             $('#text').html(parsedData);
@@ -55,10 +134,23 @@ const char page[] PROGMEM = R"rawliteral(
           console.log('ok');
         })
       }
-    })
+     
+      function getSystemMessages(){
+        $.ajax({
+          type:"GET",
+          url:"messages",
+          success: function(data){  
+      
+            $('#msgs').html(data);
+
+          }  
+        }) 
+      }
+    });
   </script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
 </body>
-</html>)rawliteral";
+)=="==";
 
 
 void initialiseWebServer() {
@@ -68,9 +160,15 @@ void initialiseWebServer() {
   Serial.println("Connecting to ");
   Serial.print(ssid);
 
+  int connectionAttempts = 0;
   //Wait for WiFi to connect
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.print(".");
+    connectionAttempts++;
+    if (connectionAttempts == 3) {
+      Serial.println("Resetting connection attempt.");
+      ESP.restart();
+    }
     delay(500);
   }
 
@@ -84,12 +182,37 @@ void initialiseWebServer() {
 
   //HTTP Server Responses
   server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
-    Serial.println("Sending data to webpage!");
     request->send_P(200, "text/html", page);
   });
+
+  server.on("/house", HTTP_GET, [](AsyncWebServerRequest * request) {
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    String sHouseJson = preferences.getString("houseJson", "");
+    xSemaphoreGive(mutex);
+    char houseJson[sHouseJson.length() + 1] = "";
+    sHouseJson.toCharArray(houseJson, sHouseJson.length() + 1);
+    request->send_P(200, "text/plain", houseJson);
+  });
+
+  server.on("/house", HTTP_PUT, [](AsyncWebServerRequest * request) {
+    xSemaphoreTake(mutex, portMAX_DELAY);
+    String sHouseJson = preferences.getString("houseJson", "");
+    xSemaphoreGive(mutex);
+    char houseJson[sHouseJson.length() + 1] = "";
+    sHouseJson.toCharArray(houseJson, sHouseJson.length() + 1);
+    request->send_P(200, "text/plain", houseJson);
+  });
+
   server.on("/data", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", text);
   });
+
+  server.on("/messages", HTTP_GET, [](AsyncWebServerRequest * request) {
+    char cSystemMessages[systemMessages.length()] = "";
+    systemMessages.toCharArray(cSystemMessages, systemMessages.length());
+    request->send_P(200, "text/plain", cSystemMessages);
+  });
+
   server.on("/get", HTTP_GET, [] (AsyncWebServerRequest * request) {
     String inputMessage;
     String inputParam;
@@ -97,30 +220,39 @@ void initialiseWebServer() {
     if (request->hasParam("sourcejson")) {
       inputMessage = request->getParam("sourcejson")->value();
       inputParam = "sourcejson";
+      Serial.print("InputMessage: ");
+      Serial.println(inputMessage);
       xSemaphoreTake(mutex, portMAX_DELAY);
-      //Construct from JSON
+      house1->constructFromJson(inputMessage);
       xSemaphoreGive(mutex);
     } else {
       inputMessage = "No message sent";
       inputParam = "none";
     }
-    Serial.println(inputMessage);
+    Serial.println("House constructed!");
+    addSystemMessage("House constructed using JSON!");
     request->send_P(200, "text/html", page);
   });
+
   server.on("/toggle", HTTP_GET, [](AsyncWebServerRequest * request) {
     if (house1->maintainingState) {
       Serial.println("System Disabled.");
+      addSystemMessage("Environment Variable Maintenance: Disabled.");
       house1->maintainingState = false;
     } else {
       Serial.println("System Enabled.");
+      addSystemMessage("Environment Variable Maintenance: Enabled.");
       house1->maintainingState = true;
     }
     request->send_P(200, "text/html", page);
-
   });
-  //  server.on("/disable", HTTP_GET, [](AsyncWebServerRequest * request) {
-  //    request->send_P(200, "text/html", page);
-  //  });
+
+  server.on("/clear_rooms", HTTP_GET, [](AsyncWebServerRequest * request) {
+    Serial.println("House cleared!");
+    addSystemMessage("House cleared, all rooms deleted!");
+    request->send_P(200, "text/html", page);
+    house1->clearRooms();
+  });
 
   server.begin();  //Start server
   Serial.println("HTTP server started");

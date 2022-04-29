@@ -48,6 +48,15 @@ class Room {
       }
     }
 
+    void addCycle(Cycle* cycle) {
+      if (numberOfCycles <= MAX_CYCLES) {
+        cycles[numberOfCycles] = cycle;
+        numberOfCycles++;
+      } else {
+        Serial.println("Cycle limit for room reached.");
+      }
+    }
+
     void removeCycle() {
       numberOfCycles--;
     }
