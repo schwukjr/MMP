@@ -88,7 +88,7 @@ void startMaintainingState(void * pvParameters) {
   while (true) {
     if (house1->maintainingState) {
       xSemaphoreTake(mutex, portMAX_DELAY);
-      house1->maintainHome(thermobeaconDataJson);
+      addSystemMessage("Control System Changes:" + house1->maintainHome(thermobeaconDataJson));
       xSemaphoreGive(mutex);
     }
     vTaskDelay(5000 / portTICK_PERIOD_MS);

@@ -273,7 +273,10 @@ class House {
       }
     }
 
-    void maintainHome(String thermobeaconDataJson) {
+    String maintainHome(String thermobeaconDataJson) {
+      String controlChanges = "";
+      bool firstChangeRecorded = false;
+
       for (int roomIndex = 0; roomIndex < numberOfRooms; roomIndex++) {
         //Iterate through each room
         Room* room = rooms[roomIndex];
@@ -303,21 +306,21 @@ class House {
                   Serial.println("Hum: " + String(currentVariableLevel));
                 }
 
-                if (currentControl->additiveSystem == true && (currentVariableLevel < currentCycle->goal - 1)) {
+                if (currentControl->additiveSystem == true && (currentVariableLevel < currentCycle->goal - 1) && !currentControl->enabled) {
                   currentControl->enable();
-                } else if (currentControl->additiveSystem == true && (currentVariableLevel > currentCycle->goal + 1)) {
+                  controlChanges += "\n" + currentControl->name + " in " + room->name + " enabled";
+                } else if (currentControl->additiveSystem == true && (currentVariableLevel > currentCycle->goal + 1) && currentControl->enabled) {
                   currentControl->disable();
-
+                  controlChanges += "\n" + currentControl->name + " in " + room->name + " disabled";
                 }
-
-                if (currentControl->additiveSystem == false && (currentVariableLevel > currentCycle->goal + 1)) {
+                
+                if (currentControl->additiveSystem == false && (currentVariableLevel > currentCycle->goal + 1) && !currentControl->enabled) {
                   currentControl->enable();
-                } else if (currentControl->additiveSystem == false && (currentVariableLevel < currentCycle->goal - 1)) {
+                  controlChanges += "\n" + currentControl->name + " in " + room->name + " enabled";
+                } else if (currentControl->additiveSystem == false && (currentVariableLevel < currentCycle->goal - 1) && currentControl->enabled) {
                   currentControl->disable();
+                  controlChanges += "\n" + currentControl->name + " in " + room->name + " disabled";
                 }
-
-
-
               }
               Serial.println("Control Enabled: " + String(currentControl->enabled) + "\n");
             }
@@ -334,10 +337,13 @@ class House {
         //Pause briefly to allow other processes to take place, namely collection of up-to-date sensor data.
 
       }
+      return controlChanges;
     }
 
-    void clearRooms(){
+    void clearRooms() {
       numberOfRooms = 0;
     }
+
+
 
 };

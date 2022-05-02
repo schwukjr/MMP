@@ -5,16 +5,19 @@ const char page[] PROGMEM = R"=="==(
   
   <title>HomeMonitor</title>
   
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
   <script src="https://code.jquery.com/jquery-1.7.1.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 
 </head>
 
 <body>
-  <h1>HomeMonitor:</h1>
 
   <div class="container">
+    <div class="row align-items-start">
+      <div class="col">
+        <h1>HomeMonitor:</h1>
+      </div>
+    </div>
     <div class="row align-items-start">
       <div class="col">
         <form action="/get">
@@ -29,19 +32,23 @@ const char page[] PROGMEM = R"=="==(
             </div>
           </div>
           <div class="row">
-            <div class="btn-group-vertical" role="group" aria-label="Basic example">
-              <input type="button" id="btnprettify" value="Format" class="btn btn-secondary">
-              <input type="submit" value="Submit" class="btn btn-primary">
+            <div class="col">
+              <div class="btn-group-vertical" role="group" aria-label="Basic example">
+                <input type="button" id="btnprettify" value="Format" class="btn btn-secondary">
+                <input type="submit" value="Submit" class="btn btn-primary">
+              </div>
             </div>
           </div>
         </form>
       </div>
+      <hr>
       <div class="col">
         <h3>System Messages:</h3>
         <textarea type="text" id="msgs" name="msgs" rows="24" cols="75" disabled readonly>
           No System Messages.
         </textarea>  
       </div>
+      <hr>
     </div>
     <div class="row align-items-start">
       <div class="col">
@@ -57,7 +64,8 @@ const char page[] PROGMEM = R"=="==(
   <script>
     $(document).ready(function(){
       setInterval(getData,3000);
-      setInterval(getSystemMessages,1000);
+      setInterval(getSystemMessages,3000);
+      document.getElementById ("btnprettify").addEventListener ("click", prettifyJson, false);
       document.getElementById ("btnprettify").addEventListener ("click", prettifyJson, false);
       load();
 
