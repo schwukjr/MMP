@@ -13,8 +13,8 @@ const int daylightOffset_sec = 3600;
 
 AsyncWebServer server(80);
 
-const char* ssid = "BTWholeHome-QZG";
-const char* password = "DLvJdC6QhrQp";
+const char* ssid = "PAU-IoT";
+const char* password = "tmLazaNCWqUqFVzN";
 char text[2000];  //Data to send to web page.
 String systemMessages = "";  //System messages to send to web page.
 
@@ -54,9 +54,9 @@ void setup() {
 
   mutex = xSemaphoreCreateMutex();
 
-  xTaskCreate(startBluetoothScan, "BluetoothTask", 30000, NULL, 1, &BluetoothTaskHandle);
-  xTaskCreate(generateWebPageDataOutput, "OutputTask", 50000, NULL, 0, &OutputTaskHandle);
-  xTaskCreate(startMaintainingState, "MaintainTask", 30000, NULL, 0, &MaintainTaskHandle);
+  xTaskCreatePinnedToCore(startBluetoothScan, "BluetoothTask", 30000, NULL, 0, &BluetoothTaskHandle, 1);
+  xTaskCreatePinnedToCore(generateWebPageDataOutput, "OutputTask", 50000, NULL, 0, &OutputTaskHandle, 0);
+  xTaskCreatePinnedToCore(startMaintainingState, "MaintainTask", 30000, NULL, 0, &MaintainTaskHandle, 1);
 
   vTaskDelete(NULL); //End the Setup() and Loop() Tasks, as they are no longer needed.
 

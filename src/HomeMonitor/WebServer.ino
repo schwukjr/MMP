@@ -72,7 +72,7 @@ const char page[] PROGMEM = R"=="==(
       function load(){
         $.ajax({
           type:"GET",
-          url:"load",
+          url:"load_house",
           success: function(data){        
             $('#sourcejson').html(data);
             prettifyJson();
@@ -193,7 +193,7 @@ void initialiseWebServer() {
     request->send_P(200, "text/html", page);
   });
 
-  server.on("/house", HTTP_GET, [](AsyncWebServerRequest * request) {
+  server.on("/load_house", HTTP_GET, [](AsyncWebServerRequest * request) {
     xSemaphoreTake(mutex, portMAX_DELAY);
     String sHouseJson = preferences.getString("houseJson", "");
     xSemaphoreGive(mutex);
@@ -202,14 +202,14 @@ void initialiseWebServer() {
     request->send_P(200, "text/plain", houseJson);
   });
 
-  server.on("/house", HTTP_PUT, [](AsyncWebServerRequest * request) {
-    xSemaphoreTake(mutex, portMAX_DELAY);
-    String sHouseJson = preferences.getString("houseJson", "");
-    xSemaphoreGive(mutex);
-    char houseJson[sHouseJson.length() + 1] = "";
-    sHouseJson.toCharArray(houseJson, sHouseJson.length() + 1);
-    request->send_P(200, "text/plain", houseJson);
-  });
+//  server.on("/house", HTTP_PUT, [](AsyncWebServerRequest * request) {
+//    xSemaphoreTake(mutex, portMAX_DELAY);
+//    String sHouseJson = preferences.getString("houseJson", "");
+//    xSemaphoreGive(mutex);
+//    char houseJson[sHouseJson.length() + 1] = "";
+//    sHouseJson.toCharArray(houseJson, sHouseJson.length() + 1);
+//    request->send_P(200, "text/plain", houseJson);
+//  });
 
   server.on("/data", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", text);
@@ -224,7 +224,6 @@ void initialiseWebServer() {
   server.on("/get", HTTP_GET, [] (AsyncWebServerRequest * request) {
     String inputMessage;
     String inputParam;
-    // GET input1 value on <ESP_IP>/get?input1=<inputMessage>
     if (request->hasParam("sourcejson")) {
       inputMessage = request->getParam("sourcejson")->value();
       inputParam = "sourcejson";
@@ -239,7 +238,7 @@ void initialiseWebServer() {
     }
     Serial.println("House constructed!");
     addSystemMessage("House constructed using JSON!");
-    request->send_P(200, "text/html", page);
+    request->send_P(204, "text/html", page);
   });
 
   server.on("/toggle", HTTP_GET, [](AsyncWebServerRequest * request) {

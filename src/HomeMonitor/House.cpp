@@ -198,9 +198,15 @@ class House {
         for (int j = 0; j < currentRoom->numberOfControls; j++) {
           JsonObject jsonControl = jsonControlsInRoom.createNestedObject();
           jsonControl["name"] = currentRoom->controls[j]->name;
-          jsonControl["type"] = currentRoom->controls[j]->type;
+          jsonControl["variabletype"] = currentRoom->controls[j]->variableType;
           jsonControl["additivesystem"] = currentRoom->controls[j]->additiveSystem;
           jsonControl["enabled"] = currentRoom->controls[j]->enabled;
+          jsonControl["type"] = currentRoom->controls[j]->type;
+          if (currentRoom->controls[j]->type == "Relay") {
+            Relay* relay = static_cast < Relay * > (currentRoom->controls[j]);
+            jsonControl["pin"] = relay->pin;
+            jsonControl["activehigh"] = relay->activeHigh;
+          }
         }
       }
 
@@ -237,7 +243,7 @@ class House {
             if (sensorType == "Thermobeacon") {
               String macAddr = doc["rooms"][i]["sensors"][j]["macaddress"].as<String>();
               newRoom->addSensor(new Thermobeacon(sensorName, sensorType, macAddr));
-            } else if (sensorType == "OneWire") {//?!
+            } else if (sensorType == "OneWire") {
               int pin = doc["rooms"][i]["sensors"][j]["pinnumber"].as<int>();
               newRoom->addSensor(new OneWireTempSensor(sensorName, sensorType, pin));
             } else if (sensorType == "DummyHybrid") {
@@ -247,7 +253,7 @@ class House {
             } else if (sensorType == "DummyHum") {
               newRoom->addSensor(new DummyHumiditySensor(sensorName, sensorType));
             } else {
-              Serial.println("Sensor not found!");
+              Serial.println("Sensor not found!"); //No sensor is added.
             }
           }
 
@@ -263,9 +269,17 @@ class House {
 
           for (int j = 0; j < numberOfControls; j++) {
             String controlName = doc["rooms"][i]["controls"][j]["name"].as<String>();
-            String controlType = doc["rooms"][i]["controls"][j]["type"].as<String>();
+            String controlVariableType = doc["rooms"][i]["controls"][j]["variabletype"].as<String>();
             bool controlAdditive = doc["rooms"][i]["controls"][j]["additivesystem"].as<bool>();
-            newRoom->addControl(new ControlSystem(controlName, controlType, controlAdditive));
+            String controlType = doc["rooms"][i]["controls"][j]["type"].as<String>();
+
+            if (controlType == "Relay") {
+              int pin = doc["rooms"][i]["controls"][j]["pin"].as<int>();
+              bool activeHigh = doc["rooms"][i]["controls"][j]["activehigh"].as<bool>();
+              newRoom->addControl(new Relay(controlName, controlVariableType, controlAdditive, controlType, pin, activeHigh));
+            } else {
+              newRoom->addControl(new ControlSystem(controlName, controlVariableType, controlAdditive, controlType));
+            }
           }
 
           addRoom(newRoom);
@@ -313,7 +327,7 @@ class House {
                   currentControl->disable();
                   controlChanges += "\n" + currentControl->name + " in " + room->name + " disabled";
                 }
-                
+
                 if (currentControl->additiveSystem == false && (currentVariableLevel > currentCycle->goal + 1) && !currentControl->enabled) {
                   currentControl->enable();
                   controlChanges += "\n" + currentControl->name + " in " + room->name + " enabled";
