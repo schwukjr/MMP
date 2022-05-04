@@ -11,8 +11,8 @@ const int daylightOffset_sec = 3600;
 
 AsyncWebServer server(80);
 
-const char* ssid = "BTWholeHome-QZG";
-const char* password = "DLvJdC6QhrQp";
+const char* ssid = "HomeMonitorTest";
+const char* password = "h0m3m0n1t0r";
 char text[5000];  //Data to send to web page.
 
 String thermobeaconDataJson = "";
@@ -95,8 +95,8 @@ void generateWebPageDataOutput(void * pvParameters) {
     xSemaphoreTake(mutex, portMAX_DELAY);
     String houseJson = house1->toJSON(thermobeaconDataJson);
     xSemaphoreGive(mutex);
-    houseJson.toCharArray(text, houseJson.length()); 
-    Serial.println(text);
+    houseJson.toCharArray(text, houseJson.length() + 1); 
+    //Serial.println(text);
     vTaskDelay(10000 / portTICK_PERIOD_MS);
   }
 }

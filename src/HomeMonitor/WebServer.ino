@@ -1,10 +1,10 @@
-const char page[] PROGMEM = R"rawliteral(
+const char page[] PROGMEM = R"=="==(
 <!DOCTYPE HTML><html>
 <head>
   <title>ESP Input Form</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js\"></script>
-  <script src=\"https://code.jquery.com/jquery-1.7.1.min.js\"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+  <script src="https://code.jquery.com/jquery-1.7.1.min.js"></script>
 </head>
 
 <body>
@@ -27,29 +27,30 @@ const char page[] PROGMEM = R"rawliteral(
           type:"GET",
           url:"data",
           success: function(data){  
-
-            let s = JSON.parse(data);
-            let parsedData = "";
-
-            parsedData += "<p>House Name: " + s.housename + "</p>";
-            parsedData += "<p>Number of Rooms: " + s.numberofrooms + "</p>";
-            parsedData += "<p>Rooms:</p>";
-            for (let i = 0; i < s.numberofrooms; i++) {
-              parsedData += "<p> --- Room Name: " + s.rooms[i].roomname + "</p>";
-              parsedData += "<p> --- Average Temperature: " + s.rooms[i].averagetemperature + "</p>";
-              parsedData += "<p> --- Average Humidity: " + s.rooms[i].averagehumidity + "</p>";
-              parsedData += "<p> --- Number of Sensors: " + s.rooms[i].numberofsensors + "</p>";
-              parsedData += "<p> --- Sensors:</p>";
-
-              for (let j = 0; j < s.rooms[i].numberofsensors; j++){
-                parsedData += "<p> ------ Sensor Name: " + s.rooms[i].sensors[j].sensorname + "</p>";
-                parsedData += "<p> ------ Measured Temperature: " + s.rooms[i].sensors[j].temperature + "</p>";
-                parsedData += "<p> ------ Measured Humidity: " + s.rooms[i].sensors[j].humidity + "</p>";
+            if (data != ""){          
+              let s = JSON.parse(data);
+              let parsedData = "";
+  
+              parsedData += "<p>House Name: " + s.housename + "</p>";
+              parsedData += "<p>Number of Rooms: " + s.numberofrooms + "</p>";
+              parsedData += "<p>Rooms:</p>";
+              for (let i = 0; i < s.numberofrooms; i++) {
+                parsedData += "<p> --- Room Name: " + s.rooms[i].roomname + "</p>";
+                parsedData += "<p> --- Average Temperature: " + s.rooms[i].averagetemperature + "</p>";
+                parsedData += "<p> --- Average Humidity: " + s.rooms[i].averagehumidity + "</p>";
+                parsedData += "<p> --- Number of Sensors: " + s.rooms[i].numberofsensors + "</p>";
+                parsedData += "<p> --- Sensors:</p>";
+  
+                for (let j = 0; j < s.rooms[i].numberofsensors; j++){
+                  parsedData += "<p> ------ Sensor Name: " + s.rooms[i].sensors[j].sensorname + "</p>";
+                  parsedData += "<p> ------ Measured Temperature: " + s.rooms[i].sensors[j].temperature + "</p>";
+                  parsedData += "<p> ------ Measured Humidity: " + s.rooms[i].sensors[j].humidity + "</p>";
+                  parsedData += "<br>";
+                }
                 parsedData += "<br>";
               }
-              parsedData += "<br>";
+              $('#text').html(parsedData);
             }
-            $('#text').html(parsedData);
           }
         }).done(function() {
           console.log('ok');
@@ -58,7 +59,7 @@ const char page[] PROGMEM = R"rawliteral(
     })
   </script>
 </body>
-</html>)rawliteral";
+</html>)=="==";
 
 
 void initialiseWebServer() {
@@ -84,11 +85,11 @@ void initialiseWebServer() {
 
   //HTTP Server Responses
   server.on("/", HTTP_GET, [](AsyncWebServerRequest * request) {
-    Serial.println("Sending data to webpage!");
     request->send_P(200, "text/html", page);
   });
   server.on("/data", HTTP_GET, [](AsyncWebServerRequest * request) {
     request->send_P(200, "text/plain", text);
+    Serial.println("Sending data to webpage!" + String(text));
   });
   server.on("/get", HTTP_GET, [] (AsyncWebServerRequest * request) {
     String inputMessage;
