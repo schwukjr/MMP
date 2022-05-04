@@ -66,13 +66,12 @@ const char page[] PROGMEM = R"=="==(
       setInterval(getData,3000);
       setInterval(getSystemMessages,3000);
       document.getElementById ("btnprettify").addEventListener ("click", prettifyJson, false);
-      document.getElementById ("btnprettify").addEventListener ("click", prettifyJson, false);
       load();
 
       function load(){
         $.ajax({
           type:"GET",
-          url:"load",
+          url:"house",
           success: function(data){        
             $('#sourcejson').html(data);
             prettifyJson();
@@ -173,7 +172,7 @@ void initialiseWebServer() {
   while (WiFi.waitForConnectResult() != WL_CONNECTED) {
     Serial.print(".");
     connectionAttempts++;
-    if (connectionAttempts == 3) {
+    if (connectionAttempts == 10) {
       Serial.println("Resetting connection attempt.");
       ESP.restart();
     }
@@ -202,17 +201,10 @@ void initialiseWebServer() {
     request->send_P(200, "text/plain", houseJson);
   });
 
-  server.on("/house", HTTP_PUT, [](AsyncWebServerRequest * request) {
-    xSemaphoreTake(mutex, portMAX_DELAY);
-    String sHouseJson = preferences.getString("houseJson", "");
-    xSemaphoreGive(mutex);
-    char houseJson[sHouseJson.length() + 1] = "";
-    sHouseJson.toCharArray(houseJson, sHouseJson.length() + 1);
-    request->send_P(200, "text/plain", houseJson);
-  });
-
   server.on("/data", HTTP_GET, [](AsyncWebServerRequest * request) {
+    xSemaphoreTake(mutex, portMAX_DELAY);
     request->send_P(200, "text/plain", text);
+    xSemaphoreGive(mutex);
   });
 
   server.on("/messages", HTTP_GET, [](AsyncWebServerRequest * request) {

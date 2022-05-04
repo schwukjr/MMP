@@ -13,8 +13,8 @@ const int daylightOffset_sec = 3600;
 
 AsyncWebServer server(80);
 
-const char* ssid = "BTWholeHome-QZG";
-const char* password = "DLvJdC6QhrQp";
+const char* ssid = "PAU-IoT";
+const char* password = "tmLazaNCWqUqFVzN";
 char text[2000];  //Data to send to web page.
 String systemMessages = "";  //System messages to send to web page.
 
@@ -55,27 +55,11 @@ void setup() {
   mutex = xSemaphoreCreateMutex();
 
   xTaskCreate(startBluetoothScan, "BluetoothTask", 30000, NULL, 1, &BluetoothTaskHandle);
-  xTaskCreate(generateWebPageDataOutput, "OutputTask", 50000, NULL, 0, &OutputTaskHandle);
-  xTaskCreate(startMaintainingState, "MaintainTask", 30000, NULL, 0, &MaintainTaskHandle);
+  xTaskCreate(generateWebPageDataOutput, "OutputTask", 30000, NULL, 0, &OutputTaskHandle);
+  //xTaskCreate(startMaintainingState, "MaintainTask", 30000, NULL, 0, &MaintainTaskHandle);
 
-  vTaskDelete(NULL); //End the Setup() and Loop() Tasks, as they are no longer needed.
+//  vTaskDelete(NULL); //End the Setup() and Loop() Tasks, as they are no longer needed.
 
-}
-
-void repeat(void * pvParameters) {
-  Serial.print("OutputTaskHandle running on core ");
-  Serial.println(xPortGetCoreID());
-
-  vTaskDelay(30000 / portTICK_PERIOD_MS); //Wait 30 seconds before beginning processing, to collect useful data beforehand.
-
-  while (true) {
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
-    xSemaphoreTake(mutex, portMAX_DELAY);
-    if (thermobeaconDataJson != "") {
-      Serial.println(house1->toJson(thermobeaconDataJson));
-    }
-    xSemaphoreGive(mutex);
-  }
 }
 
 void startMaintainingState(void * pvParameters) {
@@ -94,6 +78,7 @@ void startMaintainingState(void * pvParameters) {
     vTaskDelay(5000 / portTICK_PERIOD_MS);
   }
 }
+
 void stopMaintainingState() {
   vTaskDelete(MaintainTaskHandle);
 }
@@ -113,7 +98,7 @@ void generateWebPageDataOutput(void * pvParameters) {
   }
 }
 
-void addSystemMessage(String message){
+void addSystemMessage(String message) {
   char currentTimeStamp[20] = "";
 
   struct tm timeinfo;

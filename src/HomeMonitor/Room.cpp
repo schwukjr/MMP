@@ -93,7 +93,11 @@ class Room {
         }
       }
 
-      return (tempSum / validTempCount);
+      if (validTempCount == 0) {
+        return -100;
+      } else {
+        return (tempSum / validTempCount);
+      }
     }
 
     double getTemperature(String n, String thermobeaconDataJson) {
@@ -146,7 +150,12 @@ class Room {
           }
         }
       }
-      return (humSum / validHumCount);
+
+      if (validHumCount == 0) {
+        return -100;
+      } else {
+        return (humSum / validHumCount);
+      }
     }
 
     double getHumidity(String n, String thermobeaconDataJson) {

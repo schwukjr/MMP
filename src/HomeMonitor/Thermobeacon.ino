@@ -22,7 +22,9 @@ void startBluetoothScan(void * pvParameters) {
     Serial.println("\nStarting scan!");
     BLEScanResults foundDevices = pBLEScan->start(5, false);
     if (foundDevices.getCount() > 0) {
+    Serial.println("Devices: " + String(foundDevices.getCount()));
       for (int i = 0; i < foundDevices.getCount(); i++) {
+        //Serial.println("Device " + String(i));
         String addr(foundDevices.getDevice(i).getAddress().toString().c_str());
 
         std::string strManufacturerData = foundDevices.getDevice(i).getManufacturerData();
@@ -51,12 +53,12 @@ void startBluetoothScan(void * pvParameters) {
           free(manufacturerdata);
           pBLEScan->clearResults(); // delete results fromBLEScan buffer to release memory
           Serial.println("Data collected from: " + sensorDataDoc["address"].as<String>());
-//          Serial.println("Count: " + String(foundDevices.getCount()));
+          //          Serial.println("Count: " + String(foundDevices.getCount()));
         }
       }
 
 
-      
+
       String jsonBuffer = "";
       serializeJsonPretty(doc, jsonBuffer);
       updateThermobeaconDataJson(jsonBuffer);
@@ -69,6 +71,8 @@ void startBluetoothScan(void * pvParameters) {
 }
 
 void updateThermobeaconDataJson(String newData) {
+  xSemaphoreTake(mutex, portMAX_DELAY);
+
   String currentData = String(thermobeaconDataJson);
 
   if (currentData == "") {
@@ -77,7 +81,7 @@ void updateThermobeaconDataJson(String newData) {
     return;
   }
 
-    DynamicJsonDocument newDataDoc(2048);
+  DynamicJsonDocument newDataDoc(2048);
   DeserializationError e = deserializeJson(newDataDoc, newData);
   if (e) {
     Serial.print("deserializeJson() failed with code ");
@@ -85,7 +89,7 @@ void updateThermobeaconDataJson(String newData) {
     return;
   }
 
-    DynamicJsonDocument currentDataDoc(2048);
+  DynamicJsonDocument currentDataDoc(2048);
   e = deserializeJson(currentDataDoc, currentData);
   if (e) {
     Serial.print("deserializeJson() failed with code ");
@@ -120,7 +124,6 @@ void updateThermobeaconDataJson(String newData) {
 
   String updatedData = "";
   serializeJsonPretty(currentDataDoc, updatedData);
-  xSemaphoreTake(mutex, portMAX_DELAY);
   thermobeaconDataJson = String(updatedData);
   Serial.println("Running for: " + String(millis() / 1000) + "s");
   //Serial.println(thermobeaconDataJson);

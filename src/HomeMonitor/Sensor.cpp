@@ -47,16 +47,22 @@ class Thermobeacon : public Sensor
 
     String getData(String thermobeaconDataJson)    {
       //Serial.println("Getting Thermobeacon Data.");
+      StaticJsonDocument<JSON_OBJECT_SIZE(15)> returnDataDoc;
 
       StaticJsonDocument<JSON_OBJECT_SIZE(1500)> currentDataDoc;
       DeserializationError e = deserializeJson(currentDataDoc, thermobeaconDataJson);
       if (e) {
-        Serial.print("deserializeJson() failed here with code ");
-        Serial.println(e.c_str());
-        return "!";
+        returnDataDoc["address"] = address;
+        returnDataDoc["temp"] = -100.00;
+        returnDataDoc["hum"] = -100.00;
+        returnDataDoc["volts"] = 0.00;
+        returnDataDoc["time"] = "01/01/1900-00:00:00";
+        String returnValue = "";
+        serializeJson(returnDataDoc, returnValue);
+        //Serial.println("ReturnValue" + returnValue);
+        return returnValue;
       }
 
-      StaticJsonDocument<JSON_OBJECT_SIZE(15)> returnDataDoc;
       bool updated = false;
 
       for (int i = 0; i < sizeof(currentDataDoc["sensors"]); i++) {
