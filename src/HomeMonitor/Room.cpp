@@ -3,6 +3,7 @@
 #include "Cycle.cpp"
 #include "ControlSystem.cpp"
 
+
 #define MAX_SENSORS 10
 #define MAX_CYCLES 5
 #define MAX_CONTROLS 5
@@ -42,6 +43,15 @@ class Room {
     void addCycle(String cycleJson) {
       if (numberOfCycles <= MAX_CYCLES) {
         cycles[numberOfCycles] = new Cycle(cycleJson);
+        numberOfCycles++;
+      } else {
+        Serial.println("Cycle limit for room reached.");
+      }
+    }
+
+    void addCycle(Cycle* cycle) {
+      if (numberOfCycles <= MAX_CYCLES) {
+        cycles[numberOfCycles] = cycle;
         numberOfCycles++;
       } else {
         Serial.println("Cycle limit for room reached.");

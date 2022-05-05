@@ -37,7 +37,7 @@ void startBluetoothScan(void * pvParameters) {
           StaticJsonDocument<JSON_OBJECT_SIZE(15)> sensorDataDoc;
           DeserializationError e = deserializeJson(sensorDataDoc, result);
           if (e) {
-            Serial.print("deserializeJson() failed with code ");
+            Serial.print("deserializeJson() failed in startBluetoothScan() with code ");
             Serial.println(e.c_str());
           } else {
             JsonObject newSensor = Sensors.createNestedObject();
@@ -77,7 +77,7 @@ void updateThermobeaconDataJson(String newData) {
     return;
   }
 
-    DynamicJsonDocument newDataDoc(2048);
+    DynamicJsonDocument newDataDoc(1024);
   DeserializationError e = deserializeJson(newDataDoc, newData);
   if (e) {
     Serial.print("deserializeJson() failed with code ");
@@ -85,10 +85,10 @@ void updateThermobeaconDataJson(String newData) {
     return;
   }
 
-    DynamicJsonDocument currentDataDoc(2048);
+    DynamicJsonDocument currentDataDoc(1024);
   e = deserializeJson(currentDataDoc, currentData);
   if (e) {
-    Serial.print("deserializeJson() failed with code ");
+    Serial.print("deserializeJson() failed in updateThermobeaconDataJson() with code ");
     Serial.println(e.c_str());
     return;
   }
@@ -123,7 +123,7 @@ void updateThermobeaconDataJson(String newData) {
   xSemaphoreTake(mutex, portMAX_DELAY);
   thermobeaconDataJson = String(updatedData);
   Serial.println("Running for: " + String(millis() / 1000) + "s");
-  //Serial.println(thermobeaconDataJson);
+  Serial.println(thermobeaconDataJson);
   xSemaphoreGive(mutex);
 
 }

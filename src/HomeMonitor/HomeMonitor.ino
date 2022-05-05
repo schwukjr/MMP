@@ -4,6 +4,7 @@
 #include <WiFiClient.h>
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
+//#include <Preferences.h>
 
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 0;
@@ -20,10 +21,16 @@ String thermobeaconDataJson = "";
 TaskHandle_t BluetoothTaskHandle, OutputTaskHandle, MaintainTaskHandle;
 static SemaphoreHandle_t mutex;
 
+//Preferences preferences;
 House* house1 = new House("House 1");
 
 void setup() {
   Serial.begin(115200);
+
+  //preferences.begin("HomeMonitor", false);
+
+  //String houseJson = preferences.getString("houseJson", "");
+  //house1->constructFromJson(houseJson);
 
   initialiseWebServer();
 
@@ -35,37 +42,40 @@ void setup() {
   house1->addRoom(new Room("Utility Room"));
   house1->addRoom(new Room("Garage"));
 
-  house1->getRoom("Bedroom")->addSensor(new Thermobeacon("Window", "b5:70:00:00:06:c4"));
-  house1->getRoom("Bedroom")->addControl(new ControlSystem("Heater", "temp", true));
-  house1->getRoom("Bedroom")->addCycle("{\"type\": \"temp\",  \"goal\": 22,  \"startTime\": 1000,  \"endTime\": 2000,  \"activeDays\": \"mtwt-ss\",  \"active\": true}\"}");
+  house1->getRoom("Bedroom")->addSensor(new Thermobeacon("Window", "Thermobeacon", "b5:70:00:00:06:c4"));
+  house1->getRoom("Bedroom")->addSensor(new Thermobeacon("Cupboard", "Thermobeacon", "b5:70:00:00:07:db"));
+  house1->getRoom("Bedroom")->addControl(new Relay("RelayTempAdditive", "temp", true, "Relay", 19, false));
+  house1->getRoom("Bedroom")->addControl(new Relay("RelayTempReductive", "temp", false, "Relay", 18, false));
+  house1->getRoom("Bedroom")->addCycle("{\"type\": \"temp\",  \"goal\": 24,  \"startTime\": 0000,  \"endTime\": 2359,  \"activeDays\": \"mtwt-ss\",  \"active\": true}\"}");
 
-  house1->getRoom("Kitchen")->addSensor(new Thermobeacon("Cupboard", "b5:70:00:00:07:db"));
+  house1->getRoom("Kitchen")->addControl(new Relay("RelayHumAdditive", "hum", true, "Relay", 17, false));
+  house1->getRoom("Kitchen")->addControl(new Relay("RelayHumReductive", "hum", false, "Relay", 16, false));
 
   mutex = xSemaphoreCreateMutex();
 
-  xTaskCreate(startBluetoothScan, "BluetoothTask", 30000, NULL, 1, &BluetoothTaskHandle);
-  xTaskCreate(generateWebPageDataOutput, "OutputTask", 50000, NULL, 0, &OutputTaskHandle);
+  xTaskCreate(startBluetoothScan, "BluetoothTask", 50000, NULL, 1, &BluetoothTaskHandle);
+  xTaskCreate(generateWebPageDataOutput, "OutputTask", 30000, NULL, 0, &OutputTaskHandle);
   xTaskCreate(startMaintainingState, "MaintainTask", 30000, NULL, 0, &MaintainTaskHandle);
 
   vTaskDelete(NULL); //End the Setup() and Loop() Tasks, as they are no longer needed.
 
 }
 
-void repeat(void * pvParameters) {
-  Serial.print("OutputTaskHandle running on core ");
-  Serial.println(xPortGetCoreID());
-
-  vTaskDelay(30000 / portTICK_PERIOD_MS); //Wait 30 seconds before beginning processing, to collect useful data beforehand.
-
-  while (true) {
-    vTaskDelay(5000 / portTICK_PERIOD_MS);
-    xSemaphoreTake(mutex, portMAX_DELAY);
-    if (thermobeaconDataJson != "") {
-      Serial.println(house1->toJSON(thermobeaconDataJson));
-    }
-    xSemaphoreGive(mutex);
-  }
-}
+//void repeat(void * pvParameters) {
+//  Serial.print("OutputTaskHandle running on core ");
+//  Serial.println(xPortGetCoreID());
+//
+//  vTaskDelay(30000 / portTICK_PERIOD_MS); //Wait 30 seconds before beginning processing, to collect useful data beforehand.
+//
+//  while (true) {
+//    vTaskDelay(5000 / portTICK_PERIOD_MS);
+//    xSemaphoreTake(mutex, portMAX_DELAY);
+//    if (thermobeaconDataJson != "") {
+//      Serial.println(house1->toJson(thermobeaconDataJson));
+//    }
+//    xSemaphoreGive(mutex);
+//  }
+//}
 
 void startMaintainingState(void * pvParameters) {
   Serial.print("MaintainTask running on core ");
@@ -93,9 +103,10 @@ void generateWebPageDataOutput(void * pvParameters) {
   Serial.println(xPortGetCoreID());
   while (true) {
     xSemaphoreTake(mutex, portMAX_DELAY);
-    String houseJson = house1->toJSON(thermobeaconDataJson);
+    String houseJson = house1->toJson(thermobeaconDataJson);
+    //preferences.putString("houseJson", houseJson);
     xSemaphoreGive(mutex);
-    houseJson.toCharArray(text, houseJson.length() + 1); 
+    houseJson.toCharArray(text, houseJson.length() + 1);
     //Serial.println(text);
     vTaskDelay(10000 / portTICK_PERIOD_MS);
   }

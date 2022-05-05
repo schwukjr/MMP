@@ -28,7 +28,7 @@ class House {
       while (true) {
         if (getLocalTime(&timeinfo)) {
           strftime(currentDayOfWeek, 2, "%w", &timeinfo);
-          return atoi(currentDayOfWeek);
+          return atoi(currentDayOfWeek) - 1;
         } else {
           vTaskDelay(200 / portTICK_PERIOD_MS);
         }
@@ -140,7 +140,7 @@ class House {
       }
     }
 
-    String toJSON(String thermobeaconDataJson) {
+    String toJson(String thermobeaconDataJson) {
       int numberOfSensors = 0;
       for (int i  = 0; i < numberOfRooms; i++) {
         numberOfSensors += rooms[i]->numberOfSensors;
@@ -148,16 +148,19 @@ class House {
 
       DynamicJsonDocument doc(2048);
 
-      doc["housename"] = name;
+      doc["name"] = name;
       doc["numberofrooms"] = numberOfRooms;
+      doc["maintainingstate"] = maintainingState;
 
       JsonArray Rooms = doc.createNestedArray("rooms");
 
       for (int i = 0; i < numberOfRooms; i++) {
         Room* currentRoom = rooms[i];
         JsonObject jsonRoom = Rooms.createNestedObject();
-        jsonRoom["roomname"] = currentRoom->name;
+        jsonRoom["name"] = currentRoom->name;
         jsonRoom["numberofsensors"] = currentRoom->numberOfSensors;
+        jsonRoom["numberofcycles"] = currentRoom->numberOfCycles;
+        jsonRoom["numberofcontrols"] = currentRoom->numberOfControls;
         jsonRoom["averagetemperature"] = currentRoom->getTemperature(thermobeaconDataJson);
         jsonRoom["averagehumidity"] = currentRoom->getHumidity(thermobeaconDataJson);
 
@@ -166,6 +169,14 @@ class House {
         for (int j = 0; j < currentRoom->numberOfSensors; j++) {
           JsonObject jsonSensor = jsonSensorsInRoom.createNestedObject();
           jsonSensor["name"] = currentRoom->sensors[j]->name;
+          jsonSensor["type"] = currentRoom->sensors[j]->type;
+          if (currentRoom->sensors[j]->type == "Thermobeacon") {
+            Thermobeacon* thermobeacon = static_cast < Thermobeacon * > (currentRoom->sensors[j]);
+            jsonSensor["macaddress"] = thermobeacon->address;
+          } else if (currentRoom->sensors[j]->type == "OneWire") {
+            OneWireTempSensor* onewire = static_cast < OneWireTempSensor * > (currentRoom->sensors[j]);
+            jsonSensor["pinnumber"] = onewire->pinNo;
+          }
           jsonSensor["temperature"] = currentRoom->getTemperature(j, thermobeaconDataJson);
           jsonSensor["humidity"] = currentRoom->getHumidity(j, thermobeaconDataJson);
         }
@@ -187,9 +198,17 @@ class House {
         for (int j = 0; j < currentRoom->numberOfControls; j++) {
           JsonObject jsonControl = jsonControlsInRoom.createNestedObject();
           jsonControl["name"] = currentRoom->controls[j]->name;
-          jsonControl["type"] = currentRoom->controls[j]->type;
+          jsonControl["variabletype"] = currentRoom->controls[j]->variableType;
           jsonControl["additivesystem"] = currentRoom->controls[j]->additiveSystem;
           jsonControl["enabled"] = currentRoom->controls[j]->enabled;
+          jsonControl["type"] = currentRoom->controls[j]->type;
+
+          if (currentRoom->controls[j]->type == "Relay") {
+            Relay* relay = static_cast < Relay * > (currentRoom->controls[j]);
+            jsonControl["pin"] = relay->pin;
+            jsonControl["activehigh"] = relay->activeHigh;
+          }
+
         }
       }
 
@@ -198,8 +217,9 @@ class House {
       return dataJson;
     }
 
-    //ToDo update function to deserialise control systems and cycles.
-    void constructWithJson(String inputJson) {
+    void constructFromJson(String inputJson) {
+      numberOfRooms = 0; //Clear any existing rooms, before adding those defined in JSON.
+
       DynamicJsonDocument doc(2048);
       DeserializationError e = deserializeJson(doc, inputJson);
       if (e) {
@@ -207,32 +227,60 @@ class House {
         Serial.println(e.c_str());
       } else {
         name = doc["name"].as<String>();
-        numberOfRooms = doc["numberofrooms"].as<int>();
+        int numberOfJsonRooms = doc["numberofrooms"].as<int>();
+        maintainingState = doc["maintainingstate"].as<bool>();
 
-        for (int i = 0; i < numberOfRooms; i++) {
-          String roomName = doc["rooms"][i]["roomname"].as<String>();
+        for (int i = 0; i < numberOfJsonRooms; i++) {
+          String roomName = doc["rooms"][i]["name"].as<String>();
           int numberOfSensors = doc["rooms"][i]["numberofsensors"].as<int>();
+          int numberOfCycles = doc["rooms"][i]["numberofcycles"].as<int>();
+          int numberOfControls = doc["rooms"][i]["numberofcontrols"].as<int>();
 
           Room* newRoom = new Room(roomName);
 
           for (int j = 0; j < numberOfSensors; j++) {
-            String sensorType = doc["rooms"][i]["sensors"][j]["sensortype"].as<String>();
-            String sensorName = doc["rooms"][i]["sensors"][j]["sensorname"].as<String>();
+            String sensorType = doc["rooms"][i]["sensors"][j]["type"].as<String>();
+            String sensorName = doc["rooms"][i]["sensors"][j]["name"].as<String>();
 
             if (sensorType == "Thermobeacon") {
               String macAddr = doc["rooms"][i]["sensors"][j]["macaddress"].as<String>();
-              newRoom->addSensor(new Thermobeacon(sensorName, macAddr));
-            } else if (sensorType == "OneWire") {
+              newRoom->addSensor(new Thermobeacon(sensorName, sensorType, macAddr));
+            } else if (sensorType == "OneWire") {//?!
               int pin = doc["rooms"][i]["sensors"][j]["pinnumber"].as<int>();
-              newRoom->addSensor(new OneWireTempSensor(sensorName, pin));
+              newRoom->addSensor(new OneWireTempSensor(sensorName, sensorType, pin));
             } else if (sensorType == "DummyHybrid") {
-              newRoom->addSensor(new DummyHybridSensor(sensorName));
+              newRoom->addSensor(new DummyHybridSensor(sensorName, sensorType));
             } else if (sensorType == "DummyTemp") {
-              newRoom->addSensor(new DummyTemperatureSensor(sensorName));
+              newRoom->addSensor(new DummyTemperatureSensor(sensorName, sensorType));
             } else if (sensorType == "DummyHum") {
-              newRoom->addSensor(new DummyHumiditySensor(sensorName));
+              newRoom->addSensor(new DummyHumiditySensor(sensorName, sensorType));
             } else {
               Serial.println("Sensor not found!");
+            }
+          }
+
+          for (int j = 0; j < numberOfCycles; j++) {
+            String cycleName = doc["rooms"][i]["cycles"][j]["type"].as<String>();
+            double cycleGoal = doc["rooms"][i]["cycles"][j]["goal"].as<double>();
+            int cycleStartTime = doc["rooms"][i]["cycles"][j]["starttime"].as<int>();
+            int cycleEndTime = doc["rooms"][i]["cycles"][j]["endtime"].as<int>();
+            String cycleActiveDays = doc["rooms"][i]["cycles"][j]["activedays"].as<String>();
+            bool cycleActive = doc["rooms"][i]["cycles"][j]["active"].as<bool>();
+            newRoom->addCycle(new Cycle(cycleName, cycleGoal, cycleStartTime, cycleEndTime, cycleActiveDays, cycleActive));
+          }
+
+          for (int j = 0; j < numberOfControls; j++) {
+            String controlName = doc["rooms"][i]["controls"][j]["name"].as<String>();
+            String controlVariableType = doc["rooms"][i]["controls"][j]["variabletype"].as<String>();
+            bool controlAdditive = doc["rooms"][i]["controls"][j]["additivesystem"].as<bool>();
+            String controlType = doc["rooms"][i]["controls"][j]["type"].as<String>();
+
+            if (controlType == "Relay") {
+              int pin = doc["rooms"][i]["controls"][j]["pin"].as<int>();
+              bool activeHigh = doc["rooms"][i]["controls"][j]["activehigh"].as<bool>();
+              newRoom->addControl(new Relay(controlName, controlVariableType, controlAdditive, controlType, pin, activeHigh));
+            } else {
+              newRoom->addControl(new ControlSystem(controlName, controlVariableType, controlAdditive, controlType));
             }
           }
 
@@ -241,7 +289,10 @@ class House {
       }
     }
 
-    void maintainHome(String thermobeaconDataJson) {
+    String maintainHome(String thermobeaconDataJson) {
+      String controlChanges = "";
+      bool firstChangeRecorded = false;
+
       for (int roomIndex = 0; roomIndex < numberOfRooms; roomIndex++) {
         //Iterate through each room
         Room* room = rooms[roomIndex];
@@ -261,7 +312,7 @@ class House {
               ControlSystem* currentControl = room->controls[controlIndex];
               Serial.println("Current Control: " + currentControl->name);
 
-              if (currentControl->type == currentCycle->type) {
+              if (currentControl->variableType == currentCycle->type) {
                 double currentVariableLevel = -100;
                 if (currentCycle->type == "temp") {
                   currentVariableLevel = room->getTemperature(thermobeaconDataJson);
@@ -271,21 +322,21 @@ class House {
                   Serial.println("Hum: " + String(currentVariableLevel));
                 }
 
-                if (currentControl->additiveSystem == true && (currentVariableLevel < currentCycle->goal - 1)) {
+                if (currentControl->additiveSystem == true && (currentVariableLevel < currentCycle->goal - 1) && !currentControl->enabled) {
                   currentControl->enable();
-                } else if (currentControl->additiveSystem == true && (currentVariableLevel > currentCycle->goal + 1)) {
+                  controlChanges += "\n" + currentControl->name + " in " + room->name + " enabled";
+                } else if (currentControl->additiveSystem == true && (currentVariableLevel > currentCycle->goal) && currentControl->enabled) {
                   currentControl->disable();
-
+                  controlChanges += "\n" + currentControl->name + " in " + room->name + " disabled";
                 }
 
-                if (currentControl->additiveSystem == false && (currentVariableLevel > currentCycle->goal + 1)) {
+                if (currentControl->additiveSystem == false && (currentVariableLevel > currentCycle->goal + 1) && !currentControl->enabled) {
                   currentControl->enable();
-                } else if (currentControl->additiveSystem == false && (currentVariableLevel < currentCycle->goal - 1)) {
+                  controlChanges += "\n" + currentControl->name + " in " + room->name + " enabled";
+                } else if (currentControl->additiveSystem == false && (currentVariableLevel < currentCycle->goal) && currentControl->enabled) {
                   currentControl->disable();
+                  controlChanges += "\n" + currentControl->name + " in " + room->name + " disabled";
                 }
-
-
-
               }
               Serial.println("Control Enabled: " + String(currentControl->enabled) + "\n");
             }
@@ -302,6 +353,13 @@ class House {
         //Pause briefly to allow other processes to take place, namely collection of up-to-date sensor data.
 
       }
+      return controlChanges;
     }
+
+    void clearRooms() {
+      numberOfRooms = 0;
+    }
+
+
 
 };
