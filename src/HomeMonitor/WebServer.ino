@@ -39,14 +39,12 @@ const char page[] PROGMEM = R"=="==(
           </div>
         </form>
       </div>
-      <hr>
       <div class="col">
         <h3>System Messages:</h3>
         <textarea type="text" id="msgs" name="msgs" rows="24" cols="75" disabled readonly>
           No System Messages.
         </textarea>  
       </div>
-      <hr>
     </div>
     <div class="row align-items-start">
       <div class="col">
